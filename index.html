@@ -1,0 +1,4836 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="A mis enemigos: parodia interactiva en 3D con pista principal de corrido, sintetizador de banda sinaloense y particulas de codigo duplicables sobre el plagio de proyectos y las copias sin credito.">
+  <meta name="theme-color" content="#070503">
+  <title>A mis enemigos - Parodia interactiva sobre robo de codigo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Outfit:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-base: #070503;
+      --bg-elevated: rgba(18, 13, 8, 0.84);
+      --bg-card: rgba(24, 17, 10, 0.92);
+      --gold-bright: #FFD166;
+      --gold-rich: #F5A623;
+      --amber: #D97706;
+      --accent-primary: #FFD166;
+      --accent-secondary: #F5A623;
+      --accent-glow: rgba(255, 209, 102, 0.35);
+      --text-main: #FFF8EB;
+      --text-muted: #D4C3A3;
+      --text-soft: #B5A384;
+      --border-gold: rgba(255, 209, 102, 0.28);
+      --border-strong: rgba(255, 209, 102, 0.56);
+      --font-display: "Cinzel", Georgia, serif;
+      --font-ui: "Outfit", system-ui, sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+      --font-code: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      --radius-pill: 999px;
+      --radius-card: 18px;
+      --shadow-glow: 0 12px 36px rgba(0, 0, 0, 0.65), 0 0 24px rgba(245, 166, 35, 0.14);
+    }
+
+    body[data-mode="neon"] {
+      --accent-primary: #00E5FF;
+      --accent-secondary: #FF2A5F;
+      --accent-glow: rgba(0, 229, 255, 0.32);
+      --border-gold: rgba(0, 229, 255, 0.34);
+      --border-strong: rgba(255, 42, 95, 0.62);
+    }
+
+    body[data-mode="fire"] {
+      --accent-primary: #FF7A18;
+      --accent-secondary: #FF2E43;
+      --accent-glow: rgba(255, 122, 24, 0.38);
+      --border-gold: rgba(255, 122, 24, 0.38);
+      --border-strong: rgba(255, 46, 67, 0.65);
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    html,
+    body {
+      width: 100%;
+      min-height: 100%;
+      overflow-x: hidden;
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      font-family: var(--font-body);
+      -webkit-font-smoothing: antialiased;
+      user-select: none;
+      touch-action: manipulation;
+    }
+
+    body.is-intro-open {
+      overflow: hidden;
+      height: 100%;
+    }
+
+    button,
+    input {
+      font-family: inherit;
+      color: inherit;
+    }
+
+    button {
+      cursor: pointer;
+      border: none;
+      background: none;
+    }
+
+    button:focus-visible,
+    input:focus-visible,
+    a:focus-visible,
+    .progress-track:focus-visible {
+      outline: 2px solid var(--accent-primary);
+      outline-offset: 3px;
+    }
+
+    /* Fondo atmosferico y lienzo 3D */
+    #stage-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      z-index: 1;
+      background: radial-gradient(circle at 50% 44%, #15090B 0%, #0A0605 52%, #070503 100%);
+    }
+
+    .ambient-vignette {
+      position: fixed;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 50% 45%, transparent 34%, rgba(7, 5, 3, 0.74) 100%),
+        linear-gradient(180deg, rgba(7, 5, 3, 0.78) 0%, transparent 18%, transparent 74%, rgba(7, 5, 3, 0.92) 100%);
+    }
+
+    /* Pantalla de inicio */
+    .intro-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background:
+        radial-gradient(circle at 50% 42%, rgba(201, 8, 42, 0.14) 0%, rgba(14, 9, 6, 0.74) 56%, rgba(7, 5, 3, 0.86) 100%);
+      backdrop-filter: blur(5px);
+      transition: opacity 0.65s ease, visibility 0.65s ease, transform 0.65s ease;
+    }
+
+    .intro-overlay.is-hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transform: scale(1.03);
+    }
+
+    .intro-card {
+      width: 100%;
+      max-width: 720px;
+      padding: 40px 32px;
+      border-radius: 26px;
+      background: linear-gradient(165deg, rgba(28, 20, 11, 0.94), rgba(11, 8, 5, 0.97));
+      border: 1px solid rgba(255, 209, 102, 0.34);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.85), 0 0 60px rgba(245, 166, 35, 0.14);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .intro-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(circle at 50% 0%, rgba(255, 209, 102, 0.14), transparent 62%);
+    }
+
+    .intro-emblem {
+      width: 68px;
+      height: 68px;
+      margin: 0 auto 18px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 209, 102, 0.22), rgba(245, 166, 35, 0.05));
+      border: 1px solid rgba(255, 209, 102, 0.45);
+      color: var(--gold-bright);
+      box-shadow: 0 0 28px rgba(255, 209, 102, 0.22);
+    }
+
+    .intro-phrase {
+      font-family: var(--font-ui);
+      font-size: clamp(0.95rem, 2.2vw, 1.12rem);
+      font-weight: 500;
+      color: var(--gold-bright);
+      letter-spacing: 0.04em;
+      margin-bottom: 14px;
+      line-height: 1.5;
+    }
+
+    .intro-signature {
+      display: block;
+      margin-top: 4px;
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .intro-title {
+      font-family: var(--font-display);
+      font-size: clamp(2.1rem, 6vw, 3.8rem);
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      line-height: 1.08;
+      margin-bottom: 14px;
+      background: linear-gradient(180deg, #FFF5D6 0%, #FFD166 48%, #D97706 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-shadow: 0 8px 30px rgba(245, 166, 35, 0.18);
+    }
+
+    .intro-subtitle {
+      font-family: var(--font-ui);
+      font-size: 0.96rem;
+      color: var(--text-muted);
+      margin-bottom: 22px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .intro-note {
+      max-width: 540px;
+      margin: 0 auto 28px;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      color: var(--text-soft);
+    }
+
+    .btn-start {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 16px 36px;
+      border-radius: var(--radius-pill);
+      background: linear-gradient(135deg, #FFD166 0%, #F5A623 58%, #D97706 100%);
+      color: #160D04;
+      font-family: var(--font-ui);
+      font-size: 1.08rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      box-shadow: 0 10px 30px rgba(245, 166, 35, 0.36), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+      transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+    }
+
+    .btn-start:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 14px 36px rgba(255, 209, 102, 0.48);
+      filter: brightness(1.05);
+    }
+
+    .btn-start:active {
+      transform: translateY(0);
+    }
+
+    /* Estructura principal del show */
+    .app-shell {
+      position: relative;
+      z-index: 10;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.6s ease 0.15s;
+    }
+
+    .app-shell.is-active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .stage-viewport {
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: max(14px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
+      pointer-events: none;
+    }
+
+    .top-header,
+    .stage-controls,
+    .bottom-dock,
+    .protect-section,
+    .site-footer {
+      pointer-events: auto;
+    }
+
+    /* Barra superior */
+    .top-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .top-nav {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      padding: 6px;
+      border-radius: var(--radius-pill);
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-gold);
+      backdrop-filter: blur(12px);
+      box-shadow: var(--shadow-glow);
+    }
+
+    .nav-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 16px;
+      border-radius: var(--radius-pill);
+      font-family: var(--font-ui);
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: transparent;
+      border: 1px solid transparent;
+      transition: background-color 0.22s ease, color 0.22s ease, border-color 0.22s ease, transform 0.18s ease;
+    }
+
+    .nav-btn svg {
+      width: 17px;
+      height: 17px;
+      flex-shrink: 0;
+    }
+
+    .nav-btn:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .nav-btn.is-active {
+      color: #140B03;
+      background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+      border-color: rgba(255, 255, 255, 0.25);
+      box-shadow: 0 4px 18px var(--accent-glow);
+    }
+
+    .nav-btn.nav-btn-share {
+      color: var(--gold-bright);
+      border-color: rgba(255, 209, 102, 0.26);
+      background: rgba(255, 209, 102, 0.08);
+    }
+
+    .nav-btn.nav-btn-share:hover {
+      background: rgba(255, 209, 102, 0.18);
+      color: #FFF9EB;
+    }
+
+    .banner-phrase-wrap {
+      text-align: center;
+      max-width: 780px;
+      padding: 7px 18px;
+      border-radius: 14px;
+      background: rgba(9, 6, 5, 0.72);
+      border: 1px solid rgba(255, 209, 102, 0.22);
+      backdrop-filter: blur(8px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.52);
+    }
+
+    .banner-phrase {
+      font-family: var(--font-ui);
+      font-size: clamp(0.88rem, 2vw, 1.04rem);
+      font-weight: 500;
+      color: var(--gold-bright);
+      letter-spacing: 0.02em;
+      text-shadow: 0 1px 8px rgba(0, 0, 0, 0.85);
+    }
+
+    .banner-from {
+      margin-top: 2px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-shadow: 0 1px 6px rgba(0, 0, 0, 0.85);
+    }
+
+    /* Zona central de versos sincronizados */
+    .center-stage {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 20px 0 14px;
+      pointer-events: none;
+    }
+
+    .stage-title-badge {
+      font-family: var(--font-display);
+      font-size: clamp(1.25rem, 3.2vw, 2.15rem);
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #FFF6DF;
+      text-shadow: 0 3px 16px rgba(0, 0, 0, 0.94), 0 0 26px rgba(7, 5, 3, 0.88), 0 0 22px var(--accent-glow);
+      margin-bottom: 6px;
+      text-align: center;
+    }
+
+    .stage-subtitle-line {
+      font-family: var(--font-ui);
+      font-size: 0.82rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      text-shadow: 0 2px 12px rgba(0, 0, 0, 0.94), 0 0 14px rgba(7, 5, 3, 0.88);
+      margin-bottom: 12px;
+      text-align: center;
+    }
+
+    .reflection-box {
+      max-width: 680px;
+      width: 100%;
+      padding: 12px 20px;
+      border-radius: 16px;
+      background: rgba(9, 6, 5, 0.76);
+      border: 1px solid var(--border-gold);
+      backdrop-filter: blur(8px);
+      text-align: center;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.62);
+      text-shadow: 0 1px 6px rgba(0, 0, 0, 0.85);
+      transition: border-color 0.35s ease, background-color 0.35s ease, box-shadow 0.35s ease;
+    }
+
+    #reflection-card.is-instrumental {
+      background: linear-gradient(160deg, rgba(28, 18, 8, 0.84), rgba(14, 9, 4, 0.84));
+      border-color: rgba(245, 166, 35, 0.52);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.58), inset 0 0 18px rgba(245, 166, 35, 0.08);
+    }
+
+    #reflection-card.is-instrumental .reflection-section {
+      color: var(--gold-bright);
+    }
+
+    #reflection-card.is-instrumental .reflection-text {
+      color: #F6DFB0;
+      font-style: italic;
+    }
+
+    .reflection-section {
+      font-family: var(--font-ui);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent-primary);
+      margin-bottom: 4px;
+    }
+
+    .reflection-text {
+      font-family: var(--font-body);
+      font-size: clamp(0.94rem, 2vw, 1.08rem);
+      line-height: 1.48;
+      color: var(--text-main);
+      transition: opacity 0.35s ease, transform 0.35s ease;
+    }
+
+    .reflection-text.is-fading {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+
+    .reflection-next {
+      margin-top: 6px;
+      font-family: var(--font-ui);
+      font-size: clamp(0.78rem, 1.6vw, 0.86rem);
+      line-height: 1.4;
+      color: var(--text-muted);
+      transition: opacity 0.35s ease, transform 0.35s ease;
+    }
+
+    .reflection-next.is-fading {
+      opacity: 0;
+      transform: translateY(3px);
+    }
+
+    /* Dock inferior: acciones + reproductor + acceso a consejos */
+    .bottom-dock {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    .stage-controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border-radius: var(--radius-pill);
+      font-family: var(--font-ui);
+      font-size: 0.88rem;
+      font-weight: 600;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-gold);
+      color: var(--text-main);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+      transition: transform 0.18s ease, border-color 0.2s ease, background-color 0.2s ease;
+    }
+
+    .action-btn svg {
+      width: 17px;
+      height: 17px;
+      color: var(--accent-primary);
+    }
+
+    .action-btn:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent-primary);
+      background: rgba(34, 24, 14, 0.9);
+    }
+
+    .action-btn-burst {
+      background: linear-gradient(135deg, rgba(255, 209, 102, 0.22), rgba(217, 119, 6, 0.24));
+      border-color: rgba(255, 209, 102, 0.52);
+      color: #FFF4D4;
+    }
+
+    .action-btn-burst svg {
+      color: #FFD166;
+    }
+
+    .player-card {
+      width: 100%;
+      padding: 12px 18px;
+      border-radius: var(--radius-card);
+      background: var(--bg-card);
+      border: 1px solid var(--border-gold);
+      backdrop-filter: blur(14px);
+      box-shadow: var(--shadow-glow);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .player-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .btn-play-toggle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-width: 132px;
+      padding: 10px 18px;
+      border-radius: var(--radius-pill);
+      background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+      color: #140B03;
+      font-family: var(--font-ui);
+      font-size: 0.9rem;
+      font-weight: 700;
+      flex-shrink: 0;
+      box-shadow: 0 4px 16px var(--accent-glow);
+      transition: transform 0.16s ease, filter 0.16s ease;
+    }
+
+    .btn-play-toggle:hover {
+      transform: scale(1.02);
+      filter: brightness(1.06);
+    }
+
+    .btn-play-toggle svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .btn-loop-toggle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 10px 14px;
+      border-radius: var(--radius-pill);
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 209, 102, 0.24);
+      color: var(--text-muted);
+      font-family: var(--font-ui);
+      font-size: 0.82rem;
+      font-weight: 600;
+      flex-shrink: 0;
+      white-space: nowrap;
+      transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .btn-loop-toggle svg {
+      width: 15px;
+      height: 15px;
+      flex-shrink: 0;
+    }
+
+    .btn-loop-toggle:hover {
+      color: var(--text-main);
+      border-color: var(--accent-primary);
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .btn-loop-toggle.is-active {
+      color: var(--gold-bright);
+      background: rgba(255, 209, 102, 0.14);
+      border-color: var(--accent-primary);
+      box-shadow: 0 2px 12px rgba(245, 166, 35, 0.18);
+    }
+
+    .volume-control {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 12px;
+      border-radius: var(--radius-pill);
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 209, 102, 0.24);
+      color: var(--gold-bright);
+      flex-shrink: 0;
+    }
+
+    .volume-control svg {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+    }
+
+    .volume-slider {
+      width: 76px;
+      height: 6px;
+      accent-color: var(--accent-primary);
+      cursor: pointer;
+    }
+
+    .progress-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .progress-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .track-name {
+      font-weight: 600;
+      color: var(--text-main);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .time-readout {
+      font-family: var(--font-ui);
+      font-variant-numeric: tabular-nums;
+      color: var(--gold-bright);
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .progress-track {
+      position: relative;
+      width: 100%;
+      height: 10px;
+      border-radius: var(--radius-pill);
+      background: rgba(255, 255, 255, 0.12);
+      cursor: pointer;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 0%;
+      border-radius: var(--radius-pill);
+      background: linear-gradient(90deg, var(--accent-secondary), var(--accent-primary));
+      pointer-events: none;
+    }
+
+    .scroll-cue {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: var(--radius-pill);
+      background: rgba(14, 10, 6, 0.72);
+      border: 1px solid rgba(255, 209, 102, 0.24);
+      color: var(--gold-bright);
+      text-decoration: none;
+      font-family: var(--font-ui);
+      font-size: 0.8rem;
+      font-weight: 600;
+      transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+    }
+
+    .scroll-cue:hover {
+      background: rgba(28, 20, 12, 0.9);
+      border-color: var(--accent-primary);
+      transform: translateY(1px);
+    }
+
+    .scroll-cue svg {
+      width: 15px;
+      height: 15px;
+    }
+
+    /* Seccion educativa: Como proteger tu trabajo */
+    .protect-section {
+      width: 100%;
+      max-width: 980px;
+      margin: 24px auto 0;
+      padding: 36px 20px 28px;
+    }
+
+    .protect-container {
+      padding: 30px 26px;
+      border-radius: 22px;
+      background: linear-gradient(175deg, rgba(20, 14, 9, 0.94), rgba(10, 7, 4, 0.96));
+      border: 1px solid var(--border-gold);
+      backdrop-filter: blur(14px);
+      box-shadow: var(--shadow-glow);
+    }
+
+    .protect-header {
+      text-align: center;
+      max-width: 640px;
+      margin: 0 auto 26px;
+    }
+
+    .protect-kicker {
+      font-family: var(--font-ui);
+      font-size: 0.76rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent-primary);
+      margin-bottom: 6px;
+    }
+
+    .protect-title {
+      font-family: var(--font-display);
+      font-size: clamp(1.35rem, 3.2vw, 1.9rem);
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 8px;
+    }
+
+    .protect-lead {
+      font-size: 0.94rem;
+      line-height: 1.58;
+      color: var(--text-muted);
+    }
+
+    .protect-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .protect-card {
+      padding: 20px 18px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 209, 102, 0.22);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: border-color 0.22s ease, transform 0.22s ease;
+    }
+
+    .protect-card:hover {
+      border-color: var(--accent-primary);
+      transform: translateY(-2px);
+    }
+
+    .protect-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      background: rgba(255, 209, 102, 0.12);
+      border: 1px solid var(--border-gold);
+      color: var(--accent-primary);
+    }
+
+    .protect-icon svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .protect-card h3 {
+      font-family: var(--font-ui);
+      font-size: 1.04rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .protect-card p {
+      font-size: 0.9rem;
+      line-height: 1.56;
+      color: var(--text-muted);
+    }
+
+    /* Pie de pagina */
+    .site-footer {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 8px 18px;
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 18px 20px 28px;
+      font-size: 0.84rem;
+      color: var(--text-soft);
+      text-align: center;
+    }
+
+    .footer-links {
+      display: inline-flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 14px;
+    }
+
+    .footer-links a {
+      color: var(--gold-bright);
+      text-decoration: none;
+      font-weight: 600;
+      border-bottom: 1px solid rgba(255, 209, 102, 0.28);
+      transition: color 0.2s ease, border-color 0.2s ease;
+    }
+
+    .footer-links a:hover {
+      color: #FFF8EB;
+      border-color: #FFF8EB;
+    }
+
+    .footer-credit {
+      flex-basis: 100%;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 6px 14px;
+      padding-top: 6px;
+      border-top: 1px solid rgba(255, 209, 102, 0.14);
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .footer-credit a {
+      color: var(--gold-bright);
+      text-decoration: none;
+      font-weight: 600;
+      border-bottom: 1px solid rgba(255, 209, 102, 0.28);
+      transition: color 0.2s ease, border-color 0.2s ease;
+    }
+
+    .footer-credit a:hover {
+      color: #FFF8EB;
+      border-color: #FFF8EB;
+    }
+
+    /* Modal para personalizar mensaje */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(5, 3, 2, 0.78);
+      backdrop-filter: blur(8px);
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity 0.25s ease, visibility 0.25s ease;
+    }
+
+    .modal-backdrop.is-open {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+
+    .modal-panel {
+      width: 100%;
+      max-width: 480px;
+      padding: 26px 24px;
+      border-radius: 22px;
+      background: linear-gradient(170deg, #1B130B, #0D0905);
+      border: 1px solid rgba(255, 209, 102, 0.42);
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.85);
+    }
+
+    .modal-title {
+      font-family: var(--font-display);
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--gold-bright);
+      margin-bottom: 6px;
+    }
+
+    .modal-subtitle {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+
+    .field-group label {
+      font-family: var(--font-ui);
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .field-group input {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 209, 102, 0.28);
+      color: var(--text-main);
+      font-size: 0.94rem;
+    }
+
+    .field-group input::placeholder {
+      color: var(--text-soft);
+    }
+
+    .modal-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .btn-secondary {
+      padding: 11px 18px;
+      border-radius: var(--radius-pill);
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      color: var(--text-main);
+      font-family: var(--font-ui);
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 11px 20px;
+      border-radius: var(--radius-pill);
+      background: linear-gradient(135deg, #FFD166, #F5A623);
+      color: #160D04;
+      font-family: var(--font-ui);
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    /* Aviso visual (toast) */
+    .toast {
+      position: fixed;
+      top: 18px;
+      right: 18px;
+      z-index: 80;
+      max-width: 360px;
+      padding: 12px 18px;
+      border-radius: 14px;
+      background: rgba(22, 16, 10, 0.96);
+      border: 1px solid var(--accent-primary);
+      color: var(--text-main);
+      font-family: var(--font-ui);
+      font-size: 0.88rem;
+      font-weight: 500;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.7);
+      opacity: 0;
+      transform: translateY(-12px);
+      pointer-events: none;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+
+    .toast.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Responsivo para tablet y movil */
+    @media (max-width: 860px) {
+      .protect-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .intro-card {
+        padding: 28px 20px;
+      }
+
+      .top-nav {
+        border-radius: 18px;
+        gap: 6px;
+        padding: 6px;
+      }
+
+      .nav-btn {
+        padding: 8px 12px;
+        font-size: 0.8rem;
+      }
+
+      .player-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+      }
+
+      .btn-play-toggle,
+      .btn-loop-toggle,
+      .volume-control {
+        width: 100%;
+      }
+
+      .volume-control {
+        justify-content: space-between;
+      }
+
+      .volume-slider {
+        flex: 1;
+        width: auto;
+      }
+
+      .reflection-box {
+        padding: 10px 14px;
+      }
+
+      .protect-container {
+        padding: 22px 16px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .stage-viewport {
+        padding: 10px 10px 12px;
+      }
+
+      .nav-btn {
+        flex: 1 1 calc(50% - 6px);
+        justify-content: center;
+      }
+
+      .action-btn {
+        padding: 9px 14px;
+        font-size: 0.82rem;
+      }
+
+      .stage-title-badge {
+        font-size: 1.15rem;
+      }
+
+      .toast {
+        left: 12px;
+        right: 12px;
+        max-width: none;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html {
+        scroll-behavior: auto;
+      }
+
+      *,
+      *::before,
+      *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body data-mode="gold" class="is-intro-open">
+  <canvas id="stage-canvas" aria-hidden="true"></canvas>
+  <div class="ambient-vignette" aria-hidden="true"></div>
+
+  <!-- Pantalla de inicio -->
+  <section id="intro-overlay" class="intro-overlay" aria-label="Bienvenida al escenario">
+    <div class="intro-card">
+      <div class="intro-emblem" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="8 7 3 12 8 17"></polyline>
+          <polyline points="16 7 21 12 16 17"></polyline>
+          <line x1="14" y1="5" x2="10" y2="19"></line>
+        </svg>
+      </div>
+      <p id="intro-phrase" class="intro-phrase"></p>
+      <h1 class="intro-title">A MIS ENEMIGOS</h1>
+      <p class="intro-subtitle">Parodia interactiva sobre copias sin credito</p>
+      <p class="intro-note">
+        Escenario 3D interactivo con pista principal de corrido y sintetizador de banda sinaloense en tiempo real. Mueve el cursor o desliza sobre la pantalla para lanzar particulas de codigo que se clonan en directo.
+      </p>
+      <button id="btn-start-show" type="button" class="btn-start">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+          <polygon points="6,4 20,12 6,20"></polygon>
+        </svg>
+        <span>Iniciar show</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- Interfaz principal del show -->
+  <div id="app-shell" class="app-shell">
+    <div class="stage-viewport">
+      <header class="top-header">
+        <nav class="top-nav" aria-label="Modos visuales y mensaje">
+          <button type="button" class="nav-btn is-active" data-mode="gold">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polygon points="12 2 15.5 8.5 22 12 15.5 15.5 12 22 8.5 15.5 2 12 8.5 8.5 12 2"></polygon>
+              <circle cx="12" cy="12" r="2.2"></circle>
+            </svg>
+            <span>Oro y brasas</span>
+          </button>
+
+          <button type="button" class="nav-btn" data-mode="neon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polygon points="13 2 4 14 11 14 10 22 20 10 13 10 13 2"></polygon>
+            </svg>
+            <span>Palenque neón</span>
+          </button>
+
+          <button type="button" class="nav-btn" data-mode="fire">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 2c2.5 3.5 5 6.2 5 10a5 5 0 1 1-10 0c0-2.1 1-4.1 2.2-5.7.4 1.5 1.4 2.4 2.3 2.7-.2-2.4.1-4.8.5-7z"></path>
+            </svg>
+            <span>Código en llamas</span>
+          </button>
+
+          <button type="button" id="btn-open-dedication" class="nav-btn nav-btn-share">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="18" cy="5" r="3"></circle>
+              <circle cx="6" cy="12" r="3"></circle>
+              <circle cx="18" cy="19" r="3"></circle>
+              <line x1="8.6" y1="13.5" x2="15.4" y2="17.5"></line>
+              <line x1="15.4" y1="6.5" x2="8.6" y2="10.5"></line>
+            </svg>
+            <span>Dedicar y compartir</span>
+          </button>
+        </nav>
+
+        <div class="banner-phrase-wrap">
+          <p id="banner-phrase" class="banner-phrase"></p>
+          <p id="banner-from" class="banner-from" hidden></p>
+        </div>
+      </header>
+
+      <main class="center-stage">
+        <h2 class="stage-title-badge">A MIS ENEMIGOS</h2>
+        <p class="stage-subtitle-line">Para quienes hacen fork y olvidan el credito</p>
+        <div id="reflection-card" class="reflection-box is-instrumental" aria-live="polite">
+          <p id="reflection-section" class="reflection-section">Intro musical</p>
+          <p id="reflection-text" class="reflection-text">Intro de requinto y bajo</p>
+          <p id="reflection-next" class="reflection-next">Siguiente: Copiar es fácil, crear es lo que cuesta</p>
+        </div>
+      </main>
+
+      <section class="bottom-dock" aria-label="Controles del escenario y reproductor">
+        <div class="stage-controls">
+          <button type="button" id="btn-burst" class="action-btn action-btn-burst">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="8 7 3 12 8 17"></polyline>
+              <polyline points="16 7 21 12 16 17"></polyline>
+              <line x1="14" y1="4" x2="10" y2="20"></line>
+            </svg>
+            <span>Ráfaga de código</span>
+          </button>
+
+          <button type="button" id="btn-toggle-source" class="action-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3 12h3l2-6 4 12 3-8 2 2h4"></path>
+            </svg>
+            <span id="toggle-source-label">Usar sintetizador</span>
+          </button>
+
+          <button type="button" id="btn-load-mp3" class="action-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M9 18V5l12-2v13"></path>
+              <circle cx="6" cy="18" r="3"></circle>
+              <circle cx="18" cy="16" r="3"></circle>
+            </svg>
+            <span>Cargar MP3</span>
+          </button>
+
+          <input id="audio-file-input" type="file" accept="audio/*" hidden>
+        </div>
+
+        <div class="player-card">
+          <div class="player-row">
+            <button type="button" id="btn-play-pause" class="btn-play-toggle">
+              <svg id="icon-play" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <polygon points="6,4 20,12 6,20"></polygon>
+              </svg>
+              <svg id="icon-pause" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" hidden>
+                <rect x="6" y="4" width="4" height="16" rx="1"></rect>
+                <rect x="14" y="4" width="4" height="16" rx="1"></rect>
+              </svg>
+              <span id="play-pause-label">Reproducir</span>
+            </button>
+
+            <div class="progress-area">
+              <div class="progress-meta">
+                <span id="track-name" class="track-name">Pista principal (corrido.mp3)</span>
+                <span id="time-readout" class="time-readout">00:00 / 03:16</span>
+              </div>
+              <div id="progress-track" class="progress-track" role="slider" tabindex="0" aria-label="Progreso de reproduccion" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                <div id="progress-fill" class="progress-fill"></div>
+              </div>
+            </div>
+
+            <div class="volume-control">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+              </svg>
+              <input type="range" id="volume-slider" class="volume-slider" min="0" max="1" step="0.05" value="1" aria-label="Control de volumen">
+            </div>
+
+            <button type="button" id="btn-loop-toggle" class="btn-loop-toggle is-active" aria-pressed="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="17 1 21 5 17 9"></polyline>
+                <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+                <polyline points="7 23 3 19 7 15"></polyline>
+                <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+              </svg>
+              <span id="loop-toggle-label">Bucle activado</span>
+            </button>
+          </div>
+        </div>
+
+        <a href="#protect-work" class="scroll-cue">
+          <span>Cómo proteger tu trabajo</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </a>
+      </section>
+    </div>
+
+    <!-- Seccion practica sobre proteccion de autoria -->
+    <section id="protect-work" class="protect-section" aria-labelledby="protect-title">
+      <div class="protect-container">
+        <header class="protect-header">
+          <p class="protect-kicker">Buenas practicas</p>
+          <h2 id="protect-title" class="protect-title">Cómo proteger tu trabajo</h2>
+          <p class="protect-lead">
+            Mas alla de la parodia, documentar tus proyectos desde el primer dia deja constancia clara de quien los construyo.
+          </p>
+        </header>
+
+        <div class="protect-grid">
+          <article class="protect-card">
+            <div class="protect-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="9" y1="13" x2="15" y2="13"></line>
+                <line x1="9" y1="17" x2="13" y2="17"></line>
+              </svg>
+            </div>
+            <h3>Licencias claras</h3>
+            <p>
+              Incluye un archivo LICENSE explicito en la raiz del proyecto para definir con precision los permisos de uso, modificacion y redistribucion.
+            </p>
+          </article>
+
+          <article class="protect-card">
+            <div class="protect-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="6" cy="6" r="3"></circle>
+                <circle cx="6" cy="18" r="3"></circle>
+                <circle cx="18" cy="12" r="3"></circle>
+                <path d="M8.6 7.5l6.8 3"></path>
+                <path d="M8.6 16.5l6.8-3"></path>
+                <line x1="6" y1="9" x2="6" y2="15"></line>
+              </svg>
+            </div>
+            <h3>Historial de commits</h3>
+            <p>
+              Realiza commits atomicos, fechados y firmados criptograficamente; un historial ordenado sirve como evidencia tecnica de autoria y evolucion.
+            </p>
+          </article>
+
+          <article class="protect-card">
+            <div class="protect-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2l7 4v6c0 5-3.4 9.2-7 10-3.6-.8-7-5-7-10V6l7-4z"></path>
+                <polyline points="9 12 11.2 14.2 15.5 9.8"></polyline>
+              </svg>
+            </div>
+            <h3>Atribucion y avisos</h3>
+            <p>
+              Documenta la autoria y los terminos de credito en encabezados clave, avisos legales y documentacion tecnica para evitar omisiones.
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <footer id="site-footer" class="site-footer"></footer>
+  </div>
+
+  <!-- Modal de personalizacion de mensaje -->
+  <div id="dedication-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-panel">
+      <h2 id="modal-title" class="modal-title">Personalizar mensaje</h2>
+      <p class="modal-subtitle">
+        Escribe tu frase y firma para crear un enlace directo listo para compartir en redes sociales o mensajeria.
+      </p>
+
+      <form id="dedication-form">
+        <div class="field-group">
+          <label for="input-phrase">Frase superior</label>
+          <input id="input-phrase" type="text" maxlength="120" placeholder="Ej. Copiar es facil, crear es lo que cuesta">
+        </div>
+
+        <div class="field-group">
+          <label for="input-signature">Tu firma</label>
+          <input id="input-signature" type="text" maxlength="50" placeholder="Ej. De quien escribio el commit original">
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" id="btn-cancel-modal" class="btn-secondary">Cancelar</button>
+          <button type="submit" class="btn-primary">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="9" y="9" width="13" height="13" rx="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            <span>Aplicar y copiar enlace</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <audio id="main-corrido-audio" src="corrido.mp3" preload="metadata"></audio>
+
+  <script>
+    var VERSOS_TIEMPOS = [
+      { segundo: 0,     etiqueta: "Intro musical",     instrumental: true,  texto: "Intro de requinto y bajo" },
+      { segundo: 14,    etiqueta: "Intro musical",     instrumental: true,  texto: "Copiar es fácil, crear es lo que cuesta" },
+      { segundo: 26.5,  etiqueta: "Estrofa 1",         instrumental: false, texto: "Siguen tirando en el chat, señal que voy jalando." },
+      { segundo: 30.0,  etiqueta: "Estrofa 1",         instrumental: false, texto: "Así es el rollo en el jale pa' los que me andan copiando," },
+      { segundo: 33.5,  etiqueta: "Estrofa 1",         instrumental: false, texto: "bajando mis repos viejos y mi chamba pirateando." },
+      { segundo: 37.5,  etiqueta: "Estrofa 2",         instrumental: false, texto: "Que no se les haga raro verme subiendo a prod." },
+      { segundo: 41.5,  etiqueta: "Estrofa 2",         instrumental: false, texto: "Yo sí me parto en el code, no vivo de lo que otro armó." },
+      { segundo: 47.5,  etiqueta: "Estrofa 2",         instrumental: false, texto: "Si no les cuadra mi stack, pos' qué chingados me importó." },
+      { segundo: 53.5,  etiqueta: "Adorno musical",    instrumental: true,  texto: "Adorno de guitarra y bajo" },
+      { segundo: 58.5,  etiqueta: "Estrofa 3",         instrumental: false, texto: "No me agüita el burnout ni el que me abrió de volada." },
+      { segundo: 62.0,  etiqueta: "Estrofa 3",         instrumental: false, texto: "Le sé bien a esta madre, no ocupo quién me respalde." },
+      { segundo: 65.5,  etiqueta: "Estrofa 3",         instrumental: false, texto: "Nomás le dan Ctrl+C y ni así les sale el jale." },
+      { segundo: 69.5,  etiqueta: "Puente musical",    instrumental: true,  texto: "Puente musical" },
+      { segundo: 73.5,  etiqueta: "Estrofa 4",         instrumental: false, texto: "De los proyectos volados ni me voy a agüitar." },
+      { segundo: 79.5,  etiqueta: "Estrofa 4",         instrumental: false, texto: "El coco no se los presto, eso no van a clonar." },
+      { segundo: 85.5,  etiqueta: "Estrofa 4",         instrumental: false, texto: "Hoy me ven bien parado y les toca aguantar." },
+      { segundo: 92.5,  etiqueta: "Solo de requinto",  instrumental: true,  texto: "Puente musical y solo de requinto" },
+      { segundo: 104.5, etiqueta: "Solo de requinto",  instrumental: true,  texto: "Requinto en vivo, prepárate para la siguiente estrofa" },
+      { segundo: 115.5, etiqueta: "Estrofa 5",         instrumental: false, texto: "Pa' los que se hicieron güeyes cuando tocó levantar," },
+      { segundo: 119.5, etiqueta: "Estrofa 5",         instrumental: false, texto: "aquí seguimos al cien, volvimos a empezar." },
+      { segundo: 123.5, etiqueta: "Estrofa 5",         instrumental: false, texto: "Sigan robando el branch, que yo sigo sin parar." },
+      { segundo: 127.5, etiqueta: "Cierre cantado",    instrumental: false, texto: "Siguen tirando en el chat, señal que voy jalando." },
+      { segundo: 132.0, etiqueta: "Cierre cantado",    instrumental: false, texto: "Sigan clonando el jale, que yo sigo cobrando." },
+      { segundo: 136.5, etiqueta: "Cierre cantado",    instrumental: false, texto: "Y aunque me dieron la espalda, aquí sigo coronando." },
+      { segundo: 142.5, etiqueta: "Outro musical",     instrumental: true,  texto: "Cierre instrumental con requinto y bajo" },
+      { segundo: 158.0, etiqueta: "Outro musical",     instrumental: true,  texto: "Solo final de guitarra" },
+      { segundo: 175.0, etiqueta: "Outro musical",     instrumental: true,  texto: "Copiar es fácil, crear es lo que cuesta" },
+      { segundo: 191.0, etiqueta: "Final",             instrumental: true,  texto: "Acorde final" }
+    ];
+
+    const APP_CONFIG = {
+      /* Frase superior editable (se usa cuando la URL no trae ?para= ni ?frase=) */
+      FRASE_CORTA: "Copiar es fácil, crear es lo que cuesta",
+      /* Reemplaza estas etiquetas y enlaces genericos por tu perfil real antes de publicar */
+      MIS_DATOS: {
+        autor: "Autor Original del Codigo",
+        portafolio: "#portafolio",
+        github: "#github",
+        tiktok: "#tiktok"
+      },
+      /* Tiempos en segundos para sincronizar la letra completa con corrido.mp3 */
+      VERSOS_TIEMPOS: VERSOS_TIEMPOS,
+      /* Credito de audio de la pista principal */
+      CREDITO_AUDIO: {
+        titulo: "Aquí Sigo Coronando",
+        autor: "Letra original propia",
+        enlace: "https://treblo.com",
+        licencia: "Pista generada con Treblo"
+      }
+    };
+
+    (() => {
+      "use strict";
+
+      function getVerseSectionLabel(index, item) {
+        if (item && typeof item.etiqueta === "string" && item.etiqueta.trim()) {
+          return item.etiqueta.trim();
+        }
+        const total = VERSOS_TIEMPOS.length;
+        if (item && item.instrumental) {
+          return "Pasaje instrumental (" + (index + 1) + " de " + total + ")";
+        }
+        return "Verso " + (index + 1) + " de " + total;
+      }
+
+      /* Referencias del DOM */
+      const introOverlay = document.getElementById("intro-overlay");
+      const introPhraseEl = document.getElementById("intro-phrase");
+      const btnStartShow = document.getElementById("btn-start-show");
+      const appShell = document.getElementById("app-shell");
+      const bannerPhraseEl = document.getElementById("banner-phrase");
+      const bannerFromEl = document.getElementById("banner-from");
+      const reflectionCardEl = document.getElementById("reflection-card");
+      const reflectionSectionEl = document.getElementById("reflection-section");
+      const reflectionTextEl = document.getElementById("reflection-text");
+      const reflectionNextEl = document.getElementById("reflection-next");
+      const modeButtons = Array.from(document.querySelectorAll("[data-mode]"));
+      const btnBurst = document.getElementById("btn-burst");
+      const btnToggleSource = document.getElementById("btn-toggle-source");
+      const toggleSourceLabel = document.getElementById("toggle-source-label");
+      const btnLoadMp3 = document.getElementById("btn-load-mp3");
+      const audioFileInput = document.getElementById("audio-file-input");
+      const mainAudioEl = document.getElementById("main-corrido-audio");
+      const btnPlayPause = document.getElementById("btn-play-pause");
+      const iconPlay = document.getElementById("icon-play");
+      const iconPause = document.getElementById("icon-pause");
+      const playPauseLabel = document.getElementById("play-pause-label");
+      const btnLoopToggle = document.getElementById("btn-loop-toggle");
+      const loopToggleLabel = document.getElementById("loop-toggle-label");
+      const volumeSlider = document.getElementById("volume-slider");
+      const trackNameEl = document.getElementById("track-name");
+      const timeReadoutEl = document.getElementById("time-readout");
+      const progressTrack = document.getElementById("progress-track");
+      const progressFill = document.getElementById("progress-fill");
+      const siteFooter = document.getElementById("site-footer");
+      const btnOpenDedication = document.getElementById("btn-open-dedication");
+      const dedicationModal = document.getElementById("dedication-modal");
+      const dedicationForm = document.getElementById("dedication-form");
+      const inputPhrase = document.getElementById("input-phrase");
+      const inputSignature = document.getElementById("input-signature");
+      const btnCancelModal = document.getElementById("btn-cancel-modal");
+      const toastEl = document.getElementById("toast");
+      const canvas = document.getElementById("stage-canvas");
+      const ctx = canvas.getContext("2d");
+
+      /* Estado global de aplicacion */
+      const DEFAULT_CORRIDO_SRC = "corrido.mp3";
+      const DEFAULT_CORRIDO_DURATION = 196; /* 03:16 mientras carga metadata */
+      const MAIN_REF_DURATION = 196;
+      const SYNTH_TOTAL_DURATION = 72;
+      const BASE_BPM = 108;
+      const BASE_BEAT_SEC = 60 / BASE_BPM;
+      const BASE_BAR_SEC = BASE_BEAT_SEC * 2;
+      const SCHEDULER_INTERVAL_MS = 25;
+      const SCHEDULE_AHEAD_SEC = 0.12;
+
+      const motionMedia = window.matchMedia("(prefers-reduced-motion: reduce)");
+      let reduceMotion = motionMedia.matches;
+      motionMedia.addEventListener("change", (ev) => {
+        reduceMotion = ev.matches;
+      });
+
+      const MAX_VERSE_SEC = VERSOS_TIEMPOS.reduce((maxVal, entry) => {
+        const sec = Number(entry && entry.segundo);
+        return Number.isFinite(sec) ? Math.max(maxVal, sec) : maxVal;
+      }, 0);
+      const VERSE_REF_TOTAL = Math.max(MAIN_REF_DURATION, MAX_VERSE_SEC);
+
+      const state = {
+        started: false,
+        flowerTime: 0,
+        mode: "gold",
+        sourceType: "corrido",
+        isPlaying: false,
+        loopEnabled: true,
+        volume: 1,
+        synthTime: 0,
+        corridoDuration: DEFAULT_CORRIDO_DURATION,
+        lastFrameTime: performance.now(),
+        currentReflectionIdx: -1,
+        reflectionFadeTimer: null,
+        phrase: APP_CONFIG.FRASE_CORTA,
+        signature: "",
+        toastTimer: null
+      };
+
+      /* Utilidades */
+      function formatTime(sec) {
+        const clean = Math.max(0, Math.floor(Number.isFinite(sec) ? sec : 0));
+        const mins = Math.floor(clean / 60);
+        const secs = clean % 60;
+        return String(mins).padStart(2, "0") + ":" + String(secs).padStart(2, "0");
+      }
+
+      function showToast(message) {
+        toastEl.textContent = message;
+        toastEl.classList.add("is-visible");
+        if (state.toastTimer) {
+          clearTimeout(state.toastTimer);
+        }
+        state.toastTimer = setTimeout(() => {
+          toastEl.classList.remove("is-visible");
+        }, 3200);
+      }
+
+      function applyDedication(phraseText, signatureText) {
+        const cleanPhrase = (phraseText || "").trim() || APP_CONFIG.FRASE_CORTA;
+        const cleanSig = (signatureText || "").trim();
+        state.phrase = cleanPhrase;
+        state.signature = cleanSig;
+
+        bannerPhraseEl.textContent = cleanPhrase;
+        introPhraseEl.textContent = cleanPhrase;
+
+        if (cleanSig) {
+          bannerFromEl.textContent = "Mensaje de: " + cleanSig;
+          bannerFromEl.hidden = false;
+          const sigSpan = document.createElement("span");
+          sigSpan.className = "intro-signature";
+          sigSpan.textContent = "Firma: " + cleanSig;
+          introPhraseEl.appendChild(sigSpan);
+        } else {
+          bannerFromEl.hidden = true;
+          bannerFromEl.textContent = "";
+        }
+      }
+
+      function initFromUrlAndConfig() {
+        const params = new URLSearchParams(window.location.search);
+        const urlPhrase = params.get("para") || params.get("frase") || "";
+        const urlSig = params.get("de") || "";
+        applyDedication(urlPhrase, urlSig);
+
+        const d = APP_CONFIG.MIS_DATOS;
+        const authorSpan = document.createElement("span");
+        authorSpan.textContent = "Creado por " + d.autor;
+
+        const linksWrap = document.createElement("div");
+        linksWrap.className = "footer-links";
+
+        const links = [
+          { label: "Portafolio", href: d.portafolio },
+          { label: "GitHub", href: d.github },
+          { label: "TikTok", href: d.tiktok }
+        ];
+
+        links.forEach((item) => {
+          const anchor = document.createElement("a");
+          anchor.href = item.href;
+          if (/^https?:\/\//i.test(item.href)) {
+            anchor.target = "_blank";
+            anchor.rel = "noopener noreferrer";
+          }
+          anchor.textContent = item.label;
+          linksWrap.appendChild(anchor);
+        });
+
+        const credit = APP_CONFIG.CREDITO_AUDIO;
+        const creditWrap = document.createElement("div");
+        creditWrap.className = "footer-credit";
+
+        const creditTitle = document.createElement("span");
+        creditTitle.textContent = "Audio: " + credit.titulo;
+
+        const creditAuthor = document.createElement("span");
+        creditAuthor.textContent = "Autor: " + credit.autor;
+
+        const creditLinkWrap = document.createElement("span");
+        creditLinkWrap.appendChild(document.createTextNode("Enlace: "));
+        if (/^https?:\/\//i.test(credit.enlace)) {
+          const creditAnchor = document.createElement("a");
+          creditAnchor.href = credit.enlace;
+          creditAnchor.target = "_blank";
+          creditAnchor.rel = "noopener noreferrer";
+          creditAnchor.textContent = credit.enlace;
+          creditLinkWrap.appendChild(creditAnchor);
+        } else {
+          const creditLinkText = document.createElement("span");
+          creditLinkText.textContent = credit.enlace;
+          creditLinkWrap.appendChild(creditLinkText);
+        }
+
+        const creditLicense = document.createElement("span");
+        creditLicense.textContent = credit.licencia;
+
+        creditWrap.appendChild(creditTitle);
+        creditWrap.appendChild(creditAuthor);
+        creditWrap.appendChild(creditLinkWrap);
+        creditWrap.appendChild(creditLicense);
+
+        siteFooter.appendChild(authorSpan);
+        siteFooter.appendChild(linksWrap);
+        siteFooter.appendChild(creditWrap);
+      }
+
+      /* Sistema de audio: Banda sinaloense en 2/4 (108 BPM, 72.0 s) + reproductor MP3 local */
+      let audioCtx = null;
+      let instrumentGains = null;
+      let dryGain = null;
+      let wetGain = null;
+      let reverbConvolver = null;
+      let compressorNode = null;
+      let masterGain = null;
+      let mediaGain = null;
+      let analyser = null;
+      let freqData = null;
+      let noiseBuffer = null;
+
+      let schedulerId = null;
+      let cycleStartCtxTime = 0;
+      let nextEventIndex = 0;
+
+      let mediaSource = null;
+      let objectUrl = null;
+
+      function ensureMainMediaSource() {
+        if (!audioCtx || !mainAudioEl) {
+          return;
+        }
+        const isFileCorrido = window.location.protocol === "file:" && state.sourceType === "corrido";
+        if (isFileCorrido) {
+          return;
+        }
+        if (!mediaSource) {
+          mediaSource = audioCtx.createMediaElementSource(mainAudioEl);
+          mediaSource.connect(mediaGain || analyser);
+        }
+      }
+
+      function midiToFreq(midi) {
+        return 440 * Math.pow(2, (midi - 69) / 12);
+      }
+
+      function createNoiseBuffer(ctxRef) {
+        const length = Math.floor(ctxRef.sampleRate * 1.5);
+        const buffer = ctxRef.createBuffer(1, length, ctxRef.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < length; i++) {
+          data[i] = Math.random() * 2 - 1;
+        }
+        return buffer;
+      }
+
+      /* Impulso de sala corta (~0.82 s) generado por codigo para ConvolverNode */
+      function createRoomImpulseBuffer(ctxRef, durationSec) {
+        const sr = ctxRef.sampleRate;
+        const length = Math.floor(sr * durationSec);
+        const impulse = ctxRef.createBuffer(2, length, sr);
+        const earlyTaps = [0.008, 0.017, 0.029, 0.043, 0.058];
+
+        for (let ch = 0; ch < 2; ch++) {
+          const out = impulse.getChannelData(ch);
+          let lp = 0;
+          for (let i = 0; i < length; i++) {
+            const t = i / sr;
+            const decay = Math.exp(-5.8 * t) * Math.pow(1 - t / durationSec, 1.4);
+            const raw = (Math.random() * 2 - 1) * decay;
+            lp = lp * 0.48 + raw * 0.52;
+            out[i] = lp * 0.22;
+          }
+          for (let k = 0; k < earlyTaps.length; k++) {
+            const tapIdx = Math.min(length - 1, Math.floor((earlyTaps[k] + ch * 0.003) * sr));
+            out[tapIdx] += (ch === 0 ? 1 : -1) * (0.14 / (k + 1));
+          }
+        }
+        return impulse;
+      }
+
+      function ensureAudioContext() {
+        if (!audioCtx) {
+          const AudioCtor = window.AudioContext || window.webkitAudioContext;
+          audioCtx = new AudioCtor();
+
+          dryGain = audioCtx.createGain();
+          dryGain.gain.value = 0.85;
+
+          wetGain = audioCtx.createGain();
+          wetGain.gain.value = 0.16;
+
+          const reverbHighpass = audioCtx.createBiquadFilter();
+          reverbHighpass.type = "highpass";
+          reverbHighpass.frequency.value = 175;
+
+          reverbConvolver = audioCtx.createConvolver();
+          reverbConvolver.buffer = createRoomImpulseBuffer(audioCtx, 0.82);
+
+          compressorNode = audioCtx.createDynamicsCompressor();
+          compressorNode.threshold.value = -14;
+          compressorNode.knee.value = 12;
+          compressorNode.ratio.value = 4;
+          compressorNode.attack.value = 0.004;
+          compressorNode.release.value = 0.15;
+
+          masterGain = audioCtx.createGain();
+          masterGain.gain.value = 0.72 * state.volume;
+
+          mediaGain = audioCtx.createGain();
+          mediaGain.gain.value = state.volume;
+
+          analyser = audioCtx.createAnalyser();
+          analyser.fftSize = 256;
+          analyser.smoothingTimeConstant = 0.78;
+          freqData = new Uint8Array(analyser.frequencyBinCount);
+
+          /* Ganancia independiente por instrumento -> dryGain + wetGain/ConvolverNode -> Compressor -> masterGain -> Analyser -> destination */
+          instrumentGains = {
+            tuba: audioCtx.createGain(),
+            trombones: audioCtx.createGain(),
+            charchetas: audioCtx.createGain(),
+            trumpets: audioCtx.createGain(),
+            clarinets: audioCtx.createGain(),
+            tambora: audioCtx.createGain(),
+            tarola: audioCtx.createGain(),
+            cymbals: audioCtx.createGain()
+          };
+
+          instrumentGains.tuba.gain.value = 0.56;
+          instrumentGains.trombones.gain.value = 0.36;
+          instrumentGains.charchetas.gain.value = 0.38;
+          instrumentGains.trumpets.gain.value = 0.44;
+          instrumentGains.clarinets.gain.value = 0.34;
+          instrumentGains.tambora.gain.value = 0.58;
+          instrumentGains.tarola.gain.value = 0.40;
+          instrumentGains.cymbals.gain.value = 0.30;
+
+          Object.keys(instrumentGains).forEach((key) => {
+            instrumentGains[key].connect(dryGain);
+            instrumentGains[key].connect(reverbHighpass);
+          });
+
+          reverbHighpass.connect(wetGain);
+          wetGain.connect(reverbConvolver);
+
+          dryGain.connect(compressorNode);
+          reverbConvolver.connect(compressorNode);
+          compressorNode.connect(masterGain);
+          masterGain.connect(analyser);
+          mediaGain.connect(analyser);
+          analyser.connect(audioCtx.destination);
+
+          noiseBuffer = createNoiseBuffer(audioCtx);
+        }
+
+        if (audioCtx.state === "suspended") {
+          return audioCtx.resume();
+        }
+        return Promise.resolve();
+      }
+
+      /* Utilidad interna para mezclar soplido filtrado en metales y maderas */
+      function triggerBreathNoise(time, dur, centerFreq, qVal, level, targetGainNode) {
+        if (!noiseBuffer || level <= 0.0001) {
+          return;
+        }
+        const src = audioCtx.createBufferSource();
+        src.buffer = noiseBuffer;
+        const bp = audioCtx.createBiquadFilter();
+        bp.type = "bandpass";
+        bp.frequency.setValueAtTime(centerFreq, time);
+        bp.Q.value = qVal;
+        const g = audioCtx.createGain();
+        const burstDur = Math.max(0.025, Math.min(dur, 0.055));
+        g.gain.setValueAtTime(0.0001, time);
+        g.gain.linearRampToValueAtTime(level, time + 0.008);
+        g.gain.exponentialRampToValueAtTime(0.0001, time + burstDur);
+
+        src.connect(bp);
+        bp.connect(g);
+        g.connect(targetGainNode);
+        src.start(time);
+        src.stop(time + burstDur + 0.015);
+      }
+
+      /* 1. Tuba: sawtooth + sub sine (0.5x) + lowpass con envolvente y cuerpo grave */
+      function triggerTuba(time, midiNote, duration, velocity) {
+        const freq = midiToFreq(midiNote);
+        const oscMain = audioCtx.createOscillator();
+        const oscSub = audioCtx.createOscillator();
+        const filter = audioCtx.createBiquadFilter();
+        const env = audioCtx.createGain();
+        const peak = 0.34 * (velocity ?? 1);
+
+        oscMain.type = "sawtooth";
+        oscMain.frequency.setValueAtTime(freq, time);
+
+        oscSub.type = "sine";
+        oscSub.frequency.setValueAtTime(freq * 0.5, time);
+
+        filter.type = "lowpass";
+        filter.Q.value = 2.2;
+        filter.frequency.setValueAtTime(115, time);
+        filter.frequency.exponentialRampToValueAtTime(470, time + 0.024);
+        filter.frequency.exponentialRampToValueAtTime(175, time + Math.min(duration, 0.32));
+
+        env.gain.setValueAtTime(0.0001, time);
+        env.gain.linearRampToValueAtTime(peak, time + 0.018);
+        env.gain.exponentialRampToValueAtTime(peak * 0.62, time + Math.max(0.05, duration * 0.65));
+        env.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+
+        oscMain.connect(filter);
+        oscSub.connect(filter);
+        filter.connect(env);
+        env.connect(instrumentGains.tuba);
+
+        triggerBreathNoise(time, duration, 210, 1.4, peak * 0.12, instrumentGains.tuba);
+
+        oscMain.start(time);
+        oscSub.start(time);
+        oscMain.stop(time + duration + 0.025);
+        oscSub.stop(time + duration + 0.025);
+      }
+
+      /* 2. Trombones y charchetas: acordes de 3 notas a contratiempo con detune y soplido */
+      function triggerBrassSectionChord(time, notes, duration, velocity, isTrombone) {
+        const targetBus = isTrombone ? instrumentGains.trombones : instrumentGains.charchetas;
+        const basePeak = (isTrombone ? 0.085 : 0.092) * (velocity ?? 1);
+        const detuneCents = isTrombone ? 6 : 7;
+        const startCutoff = isTrombone ? 1450 : 1900;
+        const endCutoff = isTrombone ? 560 : 720;
+
+        notes.forEach((midi, idx) => {
+          const freq = midiToFreq(midi);
+          const oscA = audioCtx.createOscillator();
+          const oscB = audioCtx.createOscillator();
+          const filter = audioCtx.createBiquadFilter();
+          const env = audioCtx.createGain();
+
+          oscA.type = "sawtooth";
+          oscA.frequency.setValueAtTime(freq, time);
+          oscA.detune.setValueAtTime(-detuneCents + idx * 1.5, time);
+
+          oscB.type = "sawtooth";
+          oscB.frequency.setValueAtTime(freq, time);
+          oscB.detune.setValueAtTime(detuneCents - idx * 1.5, time);
+
+          filter.type = "lowpass";
+          filter.Q.value = isTrombone ? 1.7 : 1.9;
+          filter.frequency.setValueAtTime(startCutoff * 0.55, time);
+          filter.frequency.exponentialRampToValueAtTime(startCutoff, time + 0.012);
+          filter.frequency.exponentialRampToValueAtTime(endCutoff, time + duration);
+
+          env.gain.setValueAtTime(0.0001, time);
+          env.gain.linearRampToValueAtTime(basePeak, time + 0.009);
+          env.gain.setValueAtTime(basePeak * 0.78, time + Math.max(0.02, duration * 0.45));
+          env.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+
+          oscA.connect(filter);
+          oscB.connect(filter);
+          filter.connect(env);
+          env.connect(targetBus);
+
+          oscA.start(time);
+          oscB.start(time);
+          oscA.stop(time + duration + 0.02);
+          oscB.stop(time + duration + 0.02);
+        });
+
+        triggerBreathNoise(time, duration, isTrombone ? 950 : 1250, 1.5, basePeak * 0.28, targetBus);
+      }
+
+      /* 3. Trompetas: dos voces sawtooth detune + soplido + apoyatura, trino, caida y vibrato ~5.5 Hz */
+      function triggerTrumpetVoice(time, midiNote, duration, volume, opts) {
+        const options = opts || {};
+        const freq = midiToFreq(midiNote);
+        const oscA = audioCtx.createOscillator();
+        const oscB = audioCtx.createOscillator();
+        const lfo = audioCtx.createOscillator();
+        const lfoGain = audioCtx.createGain();
+        const filter = audioCtx.createBiquadFilter();
+        const env = audioCtx.createGain();
+
+        oscA.type = "sawtooth";
+        oscB.type = "sawtooth";
+        oscA.detune.setValueAtTime(-5.5, time);
+        oscB.detune.setValueAtTime(5.5, time);
+
+        if (options.grace) {
+          const graceFreq = midiToFreq(options.grace);
+          oscA.frequency.setValueAtTime(graceFreq, time);
+          oscB.frequency.setValueAtTime(graceFreq, time);
+          oscA.frequency.exponentialRampToValueAtTime(freq, time + 0.035);
+          oscB.frequency.exponentialRampToValueAtTime(freq, time + 0.035);
+        } else {
+          oscA.frequency.setValueAtTime(freq * 0.992, time);
+          oscB.frequency.setValueAtTime(freq * 0.992, time);
+          oscA.frequency.exponentialRampToValueAtTime(freq, time + 0.022);
+          oscB.frequency.exponentialRampToValueAtTime(freq, time + 0.022);
+        }
+
+        if (options.trill && duration >= 0.24) {
+          const trillFreq = midiToFreq(options.trill);
+          const trillStart = time + 0.055;
+          const step = 0.042;
+          for (let k = 0; k < 4; k++) {
+            const tStep = trillStart + k * step;
+            if (tStep < time + duration - 0.05) {
+              const targetF = k % 2 === 0 ? trillFreq : freq;
+              oscA.frequency.setValueAtTime(targetF, tStep);
+              oscB.frequency.setValueAtTime(targetF, tStep);
+            }
+          }
+          oscA.frequency.setValueAtTime(freq, Math.min(time + duration - 0.04, trillStart + 4 * step));
+          oscB.frequency.setValueAtTime(freq, Math.min(time + duration - 0.04, trillStart + 4 * step));
+        }
+
+        if (options.fall && duration >= 0.18) {
+          const fallStart = time + Math.max(0.06, duration - 0.12);
+          oscA.frequency.setValueAtTime(freq, fallStart);
+          oscB.frequency.setValueAtTime(freq, fallStart);
+          oscA.frequency.exponentialRampToValueAtTime(freq * 0.78, time + duration);
+          oscB.frequency.exponentialRampToValueAtTime(freq * 0.78, time + duration);
+        }
+
+        lfo.type = "sine";
+        lfo.frequency.setValueAtTime(5.5, time);
+        lfoGain.gain.setValueAtTime(0, time);
+        if (duration >= 0.30 && !options.fall) {
+          lfoGain.gain.linearRampToValueAtTime(freq * 0.0058, time + 0.14);
+        }
+        lfo.connect(lfoGain);
+        lfoGain.connect(oscA.frequency);
+        lfoGain.connect(oscB.frequency);
+
+        filter.type = "lowpass";
+        filter.Q.value = 2.4;
+        filter.frequency.setValueAtTime(840, time);
+        filter.frequency.exponentialRampToValueAtTime(3400, time + 0.032);
+        filter.frequency.exponentialRampToValueAtTime(2050, time + duration);
+
+        const peak = volume * 0.56;
+        env.gain.setValueAtTime(0.0001, time);
+        env.gain.linearRampToValueAtTime(peak, time + 0.022);
+        env.gain.setValueAtTime(peak * 0.85, time + Math.max(0.035, duration - 0.055));
+        env.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+
+        oscA.connect(filter);
+        oscB.connect(filter);
+        filter.connect(env);
+        env.connect(instrumentGains.trumpets);
+
+        triggerBreathNoise(time, duration, 2300, 1.8, peak * 0.24, instrumentGains.trumpets);
+
+        oscA.start(time);
+        oscB.start(time);
+        lfo.start(time);
+        oscA.stop(time + duration + 0.03);
+        oscB.stop(time + duration + 0.03);
+        lfo.stop(time + duration + 0.03);
+      }
+
+      function triggerTrumpets(time, leadMidi, thirdMidi, duration, volume, opts) {
+        const options = opts || {};
+        triggerTrumpetVoice(time, leadMidi, duration, volume, options);
+        if (thirdMidi) {
+          let thirdGrace = null;
+          if (options.grace) {
+            thirdGrace = options.grace - (leadMidi - thirdMidi);
+          }
+          let thirdTrill = null;
+          if (options.trill) {
+            thirdTrill = options.trill - (leadMidi - thirdMidi);
+          }
+          triggerTrumpetVoice(time, thirdMidi, duration, volume * 0.84, {
+            grace: thirdGrace,
+            trill: thirdTrill,
+            fall: options.fall
+          });
+        }
+      }
+
+      /* 4. Clarinetes: contramelodia aguda (square + triangle + lowpass) */
+      function triggerClarinet(time, midiNote, duration, volume) {
+        const freq = midiToFreq(midiNote);
+        const oscSq = audioCtx.createOscillator();
+        const oscTri = audioCtx.createOscillator();
+        const lfo = audioCtx.createOscillator();
+        const lfoGain = audioCtx.createGain();
+        const filter = audioCtx.createBiquadFilter();
+        const env = audioCtx.createGain();
+
+        oscSq.type = "square";
+        oscSq.frequency.setValueAtTime(freq, time);
+        oscSq.detune.setValueAtTime(-3.5, time);
+
+        oscTri.type = "triangle";
+        oscTri.frequency.setValueAtTime(freq, time);
+        oscTri.detune.setValueAtTime(3.5, time);
+
+        lfo.type = "sine";
+        lfo.frequency.setValueAtTime(5.2, time);
+        lfoGain.gain.setValueAtTime(0, time);
+        if (duration >= 0.28) {
+          lfoGain.gain.linearRampToValueAtTime(freq * 0.0045, time + 0.12);
+        }
+        lfo.connect(lfoGain);
+        lfoGain.connect(oscSq.frequency);
+        lfoGain.connect(oscTri.frequency);
+
+        filter.type = "lowpass";
+        filter.Q.value = 1.5;
+        filter.frequency.setValueAtTime(1250, time);
+        filter.frequency.exponentialRampToValueAtTime(2650, time + 0.03);
+        filter.frequency.exponentialRampToValueAtTime(1800, time + duration);
+
+        const peak = volume * 0.52;
+        env.gain.setValueAtTime(0.0001, time);
+        env.gain.linearRampToValueAtTime(peak, time + 0.018);
+        env.gain.setValueAtTime(peak * 0.82, time + Math.max(0.03, duration - 0.045));
+        env.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+
+        oscSq.connect(filter);
+        oscTri.connect(filter);
+        filter.connect(env);
+        env.connect(instrumentGains.clarinets);
+
+        triggerBreathNoise(time, duration, 2500, 1.6, peak * 0.18, instrumentGains.clarinets);
+
+        oscSq.start(time);
+        oscTri.start(time);
+        lfo.start(time);
+        oscSq.stop(time + duration + 0.03);
+        oscTri.stop(time + duration + 0.03);
+        lfo.stop(time + duration + 0.03);
+      }
+
+      /* 5. Tambora: golpe grave en primer tiempo + acento de aro/baqueta en segundo tiempo */
+      function triggerTambora(time, kind, level) {
+        const amp = level ?? 1;
+        if (kind === "rim") {
+          const rimOsc = audioCtx.createOscillator();
+          const rimGain = audioCtx.createGain();
+          rimOsc.type = "triangle";
+          rimOsc.frequency.setValueAtTime(420, time);
+          rimOsc.frequency.exponentialRampToValueAtTime(185, time + 0.038);
+
+          rimGain.gain.setValueAtTime(0.0001, time);
+          rimGain.gain.linearRampToValueAtTime(amp * 0.24, time + 0.003);
+          rimGain.gain.exponentialRampToValueAtTime(0.0001, time + 0.055);
+
+          rimOsc.connect(rimGain);
+          rimGain.connect(instrumentGains.tambora);
+
+          const stickNoise = audioCtx.createBufferSource();
+          stickNoise.buffer = noiseBuffer;
+          const bp = audioCtx.createBiquadFilter();
+          bp.type = "bandpass";
+          bp.frequency.setValueAtTime(1650, time);
+          bp.Q.value = 1.6;
+          const stickGain = audioCtx.createGain();
+          stickGain.gain.setValueAtTime(amp * 0.18, time);
+          stickGain.gain.exponentialRampToValueAtTime(0.0001, time + 0.042);
+
+          stickNoise.connect(bp);
+          bp.connect(stickGain);
+          stickGain.connect(instrumentGains.tambora);
+
+          const mutedTap = audioCtx.createOscillator();
+          const tapGain = audioCtx.createGain();
+          mutedTap.type = "sine";
+          mutedTap.frequency.setValueAtTime(94, time);
+          mutedTap.frequency.exponentialRampToValueAtTime(52, time + 0.07);
+          tapGain.gain.setValueAtTime(amp * 0.18, time);
+          tapGain.gain.exponentialRampToValueAtTime(0.0001, time + 0.09);
+          mutedTap.connect(tapGain);
+          tapGain.connect(instrumentGains.tambora);
+
+          rimOsc.start(time);
+          stickNoise.start(time);
+          mutedTap.start(time);
+          rimOsc.stop(time + 0.07);
+          stickNoise.stop(time + 0.055);
+          mutedTap.stop(time + 0.11);
+          return;
+        }
+
+        const osc = audioCtx.createOscillator();
+        const thump = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(126, time);
+        osc.frequency.exponentialRampToValueAtTime(43, time + 0.13);
+
+        thump.type = "triangle";
+        thump.frequency.setValueAtTime(160, time);
+        thump.frequency.exponentialRampToValueAtTime(54, time + 0.055);
+
+        gain.gain.setValueAtTime(0.0001, time);
+        gain.gain.linearRampToValueAtTime(amp * 0.42, time + 0.006);
+        gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.21);
+
+        osc.connect(gain);
+        thump.connect(gain);
+        gain.connect(instrumentGains.tambora);
+
+        osc.start(time);
+        thump.start(time);
+        osc.stop(time + 0.23);
+        thump.stop(time + 0.08);
+      }
+
+      /* 6. Tarola: patron constante con redobles y rellenos */
+      function triggerTarola(time, level, dur) {
+        const amp = level ?? 0.8;
+        const decay = dur ?? 0.11;
+
+        const noise = audioCtx.createBufferSource();
+        noise.buffer = noiseBuffer;
+
+        const hp = audioCtx.createBiquadFilter();
+        hp.type = "highpass";
+        hp.frequency.setValueAtTime(1850, time);
+
+        const snap = audioCtx.createBiquadFilter();
+        snap.type = "bandpass";
+        snap.frequency.setValueAtTime(3600, time);
+        snap.Q.value = 1.1;
+
+        const noiseGain = audioCtx.createGain();
+        noiseGain.gain.setValueAtTime(0.0001, time);
+        noiseGain.gain.linearRampToValueAtTime(amp * 0.30, time + 0.003);
+        noiseGain.gain.exponentialRampToValueAtTime(0.0001, time + decay);
+
+        noise.connect(hp);
+        hp.connect(noiseGain);
+        noise.connect(snap);
+        snap.connect(noiseGain);
+        noiseGain.connect(instrumentGains.tarola);
+
+        const body = audioCtx.createOscillator();
+        const bodyGain = audioCtx.createGain();
+        body.type = "triangle";
+        body.frequency.setValueAtTime(212, time);
+        body.frequency.exponentialRampToValueAtTime(124, time + 0.05);
+
+        bodyGain.gain.setValueAtTime(amp * 0.20, time);
+        bodyGain.gain.exponentialRampToValueAtTime(0.0001, time + 0.075);
+
+        body.connect(bodyGain);
+        bodyGain.connect(instrumentGains.tarola);
+
+        noise.start(time);
+        noise.stop(time + decay + 0.02);
+        body.start(time);
+        body.stop(time + 0.09);
+      }
+
+      /* 7. Platillos: highpass + ruido y parciales metalicos en cambios de seccion y cierre */
+      function triggerCymbal(time, level, dur) {
+        const amp = level ?? 0.85;
+        const decay = dur ?? 0.65;
+
+        const noise = audioCtx.createBufferSource();
+        noise.buffer = noiseBuffer;
+
+        const hp = audioCtx.createBiquadFilter();
+        hp.type = "highpass";
+        hp.frequency.setValueAtTime(4600, time);
+
+        const noiseGain = audioCtx.createGain();
+        noiseGain.gain.setValueAtTime(0.0001, time);
+        noiseGain.gain.linearRampToValueAtTime(amp * 0.24, time + 0.01);
+        noiseGain.gain.exponentialRampToValueAtTime(0.0001, time + decay);
+
+        noise.connect(hp);
+        hp.connect(noiseGain);
+        noiseGain.connect(instrumentGains.cymbals);
+
+        const partialFreqs = [318, 463, 689, 972];
+        const partialHp = audioCtx.createBiquadFilter();
+        partialHp.type = "highpass";
+        partialHp.frequency.setValueAtTime(3400, time);
+
+        const partialGain = audioCtx.createGain();
+        partialGain.gain.setValueAtTime(0.0001, time);
+        partialGain.gain.linearRampToValueAtTime(amp * 0.06, time + 0.008);
+        partialGain.gain.exponentialRampToValueAtTime(0.0001, time + decay * 0.72);
+
+        partialHp.connect(partialGain);
+        partialGain.connect(instrumentGains.cymbals);
+
+        partialFreqs.forEach((pf) => {
+          const osc = audioCtx.createOscillator();
+          osc.type = "square";
+          osc.frequency.setValueAtTime(pf, time);
+          osc.connect(partialHp);
+          osc.start(time);
+          osc.stop(time + decay * 0.75 + 0.02);
+        });
+
+        noise.start(time);
+        noise.stop(time + decay + 0.03);
+      }
+
+      /* Partitura original precalculada de 72.0 s en Fa Mayor (compas 2/4, 108 BPM, ritardando final) */
+      function createSeededRng(seed) {
+        let s = seed >>> 0;
+        return function () {
+          s += 0x6D2B79F5;
+          let t = Math.imul(s ^ (s >>> 15), 1 | s);
+          t ^= t + Math.imul(t ^ (t >>> 7), 61 | t);
+          return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+      }
+
+      const CHORDS_F_MAJOR = {
+        I: { root: 41, fifth: 36, charcheta: [57, 60, 65], trombone: [53, 57, 60] },
+        IV: { root: 46, fifth: 41, charcheta: [58, 62, 65], trombone: [53, 58, 62] },
+        V7: { root: 48, fifth: 43, charcheta: [55, 58, 64], trombone: [52, 55, 58] },
+        vi: { root: 38, fifth: 45, charcheta: [57, 62, 65], trombone: [53, 57, 62] }
+      };
+
+      function getTubaPassingNote(currRoot, nextRoot) {
+        if (nextRoot > currRoot) {
+          return nextRoot - 1;
+        }
+        if (nextRoot < currRoot) {
+          return nextRoot + 2;
+        }
+        return currRoot;
+      }
+
+      function buildCorridoScore() {
+        const rand = createSeededRng(20261127);
+        const events = [];
+
+        /* Progresion exacta por seccion (60 compases + acorde final sostenido = 72.0 s) */
+        const barChords = [
+          /* 1) Introduccion: 4 compases (I - V7 - I - V7) */
+          "I", "V7", "I", "V7",
+          /* 2) Estrofa 1: 8 compases (I - I - V7 - V7 - V7 - V7 - I - I) */
+          "I", "I", "V7", "V7", "V7", "V7", "I", "I",
+          /* 3) Estrofa 2: 8 compases (I - IV - V7 - I - I - V7 - V7 - I) */
+          "I", "IV", "V7", "I", "I", "V7", "V7", "I",
+          /* 4) Estrofa 3: 8 compases (I - I - IV - IV - V7 - V7 - I - V7) */
+          "I", "I", "IV", "IV", "V7", "V7", "I", "V7",
+          /* 5) Estribillo dramatico con vi: 8 compases (I - V7 - vi - IV - I - V7 - I - I) */
+          "I", "V7", "vi", "IV", "I", "V7", "I", "I",
+          /* 6) Interludio solo trompeta y clarinetes: 8 compases (IV - I - V7 - I - IV - I - V7 - I) */
+          "IV", "I", "V7", "I", "IV", "I", "V7", "I",
+          /* 7) Ultima estrofa tutti: 8 compases (I - IV - vi - V7 - I - IV - V7 - I) */
+          "I", "IV", "vi", "V7", "I", "IV", "V7", "I",
+          /* 8) Cierre: 4 compases puente + 4 compases ritardando progresivo (IV - V7 - V7 - I) */
+          "IV", "I", "V7", "I",
+          "IV", "V7", "V7", "I"
+        ];
+
+        const ritDurations = [1.24, 1.44, 1.72, 2.08];
+        const barStartTimes = [];
+        const barDurations = [];
+        let cursorTime = 0;
+
+        for (let b = 0; b < barChords.length; b++) {
+          barStartTimes.push(cursorTime);
+          const dur = b >= 56 ? ritDurations[b - 56] : BASE_BAR_SEC;
+          barDurations.push(dur);
+          cursorTime += dur;
+        }
+        const finalHoldStart = cursorTime;
+
+        /* Melodia de trompetas por compas: [subdivision16th, leadMidi, thirdMidi, dur16ths, opts] */
+        const trumpetScore = {
+          /* Intro */
+          0: [[0, 69, 65, 2], [2, 72, 69, 2], [4, 77, 72, 4, { trill: 79 }]],
+          1: [[0, 76, 70, 2], [2, 74, 70, 2], [4, 72, 67, 4, { fall: true }]],
+          2: [[0, 74, 69, 2], [2, 72, 69, 2], [4, 69, 65, 4]],
+          3: [[0, 70, 67, 2], [2, 72, 67, 2], [4, 76, 70, 3, { fall: true }]],
+
+          /* Estrofa 1 */
+          4: [[0, 69, 65, 2], [2, 72, 69, 2], [4, 74, 69, 2], [6, 72, 69, 2]],
+          5: [[0, 69, 65, 4], [4, 65, 60, 2], [6, 69, 65, 2]],
+          6: [[0, 70, 67, 2, { grace: 69 }], [2, 72, 67, 2], [4, 74, 70, 2], [6, 72, 67, 2]],
+          7: [[0, 70, 67, 4, { fall: true }]],
+          8: [[0, 76, 70, 2], [2, 74, 70, 2], [4, 72, 67, 2], [6, 70, 67, 2]],
+          9: [[0, 72, 67, 4], [4, 67, 64, 2], [6, 70, 67, 2]],
+          10: [[0, 69, 65, 2], [2, 72, 69, 2], [4, 77, 72, 4, { trill: 79 }]],
+          11: [[0, 77, 72, 2, { fall: true }]],
+
+          /* Estrofa 2 */
+          12: [[0, 72, 69, 2], [2, 74, 69, 2], [4, 77, 72, 4]],
+          13: [[0, 77, 74, 2], [2, 79, 74, 2], [4, 77, 74, 2], [6, 74, 70, 2]],
+          14: [[0, 76, 70, 2, { grace: 74 }], [2, 74, 70, 2], [4, 72, 67, 4]],
+          15: [[0, 69, 65, 4, { fall: true }]],
+          16: [[0, 69, 65, 2], [2, 72, 69, 2], [4, 77, 72, 2], [6, 76, 72, 2]],
+          17: [[0, 74, 70, 2], [2, 72, 67, 2], [4, 70, 67, 4]],
+          18: [[0, 72, 67, 2], [2, 74, 70, 2], [4, 76, 70, 2], [6, 74, 70, 2]],
+          19: [[0, 72, 69, 3], [4, 69, 65, 3, { fall: true }]],
+
+          /* Estrofa 3 */
+          20: [[0, 65, 60, 2], [2, 69, 65, 2], [4, 72, 69, 4]],
+          21: [[0, 72, 69, 2], [2, 74, 69, 2], [4, 72, 69, 2], [6, 69, 65, 2]],
+          22: [[0, 74, 70, 2, { grace: 72 }], [2, 77, 74, 2], [4, 79, 74, 4]],
+          23: [[0, 77, 74, 2], [2, 74, 70, 2], [4, 70, 65, 4, { fall: true }]],
+          24: [[0, 72, 67, 2], [2, 74, 70, 2], [4, 76, 70, 4]],
+          25: [[0, 74, 70, 2], [2, 72, 67, 2], [4, 70, 67, 4]],
+          26: [[0, 69, 65, 2], [2, 72, 69, 2], [4, 77, 72, 4]],
+          27: [[0, 76, 70, 4, { trill: 77 }]],
+
+          /* Estribillo dramatico con paso por vi menor */
+          28: [[0, 77, 72, 4, { grace: 76 }], [4, 76, 72, 2], [6, 77, 72, 2]],
+          29: [[0, 79, 76, 4], [4, 76, 70, 2], [6, 74, 70, 2]],
+          30: [[0, 81, 77, 4, { trill: 82 }], [4, 77, 74, 2], [6, 74, 69, 2]],
+          31: [[0, 79, 74, 4, { fall: true }]],
+          32: [[0, 81, 77, 2], [2, 77, 72, 2], [4, 74, 69, 2], [6, 72, 69, 2]],
+          33: [[0, 74, 70, 2], [2, 76, 70, 2], [4, 72, 67, 4]],
+          34: [[0, 69, 65, 2], [2, 72, 69, 2], [4, 77, 72, 4, { trill: 79 }]],
+          35: [[0, 77, 72, 2, { fall: true }]],
+
+          /* Interludio: solo expresivo de trompeta (una sola voz) con apoyaturas, trinos y caidas */
+          36: [[0, 74, null, 2, { grace: 72 }], [2, 77, null, 2], [4, 79, null, 4, { trill: 81 }]],
+          37: [[0, 77, null, 2], [2, 74, null, 2], [4, 72, null, 3, { fall: true }]],
+          38: [[4, 76, null, 2, { grace: 74 }], [6, 74, null, 2]],
+          39: [[0, 72, null, 3, { fall: true }]],
+          40: [[0, 79, null, 2, { grace: 77 }], [2, 82, null, 2], [4, 81, null, 2], [6, 79, null, 2]],
+          41: [[0, 77, null, 4, { trill: 79 }]],
+          42: [[0, 76, null, 2, { grace: 74 }], [2, 74, null, 2], [4, 72, null, 2], [6, 70, null, 2]],
+          43: [[0, 69, null, 3, { fall: true }]],
+
+          /* Ultima estrofa tutti */
+          44: [[0, 72, 69, 2], [2, 77, 72, 2], [4, 81, 77, 4]],
+          45: [[0, 79, 74, 2], [2, 77, 74, 2], [4, 74, 70, 4]],
+          46: [[0, 77, 74, 2, { grace: 76 }], [2, 81, 77, 2], [4, 77, 74, 4, { trill: 79 }]],
+          47: [[0, 76, 70, 2], [2, 74, 70, 2], [4, 72, 67, 4, { fall: true }]],
+          48: [[0, 77, 72, 2], [2, 81, 77, 2], [4, 84, 81, 4]],
+          49: [[0, 82, 77, 2], [2, 79, 74, 2], [4, 77, 74, 4]],
+          50: [[0, 76, 70, 2], [2, 74, 70, 2], [4, 76, 70, 2], [6, 79, 76, 2]],
+          51: [[0, 77, 72, 4, { trill: 79 }]],
+
+          /* Cierre: 4 compases puente + 4 compases ritardando progresivo */
+          52: [[0, 77, 74, 2], [2, 79, 74, 2], [4, 77, 74, 4]],
+          53: [[0, 77, 72, 2], [2, 74, 69, 2], [4, 72, 69, 4]],
+          54: [[0, 74, 70, 2], [2, 76, 70, 2], [4, 72, 67, 4]],
+          55: [[0, 69, 65, 4]],
+          56: [[0, 74, 70, 2], [2, 77, 74, 2], [4, 79, 74, 4]],
+          57: [[0, 76, 70, 2], [2, 79, 76, 2], [4, 76, 70, 4]],
+          58: [[0, 72, 67, 2], [2, 74, 70, 2], [4, 76, 70, 4]],
+          59: [[0, 72, 67, 2], [2, 76, 70, 2], [4, 79, 76, 4]]
+        };
+
+        /* Contramelodia aguda de clarinetes en cierres de compas e interludio */
+        const clarinetScore = {
+          2: [[4, 81, 2], [6, 84, 2]],
+          3: [[0, 82, 2], [2, 79, 2], [4, 76, 3]],
+          7: [[4, 76, 2], [6, 79, 2]],
+          11: [[2, 77, 2], [4, 81, 2], [6, 84, 2]],
+          15: [[4, 74, 2], [6, 77, 2]],
+          19: [[4, 77, 2], [6, 79, 2]],
+          23: [[4, 77, 2], [6, 82, 2]],
+          27: [[4, 79, 2], [6, 76, 2]],
+          28: [[4, 84, 2], [6, 81, 2]],
+          31: [[4, 77, 2], [6, 79, 2]],
+          35: [[2, 77, 2], [4, 81, 2], [6, 84, 2]],
+          37: [[6, 77, 2]],
+          38: [[0, 79, 2], [2, 76, 2]],
+          39: [[4, 77, 2], [5, 79, 1], [6, 81, 2]],
+          41: [[4, 81, 2], [6, 84, 2]],
+          43: [[4, 77, 2], [6, 81, 2]],
+          45: [[4, 82, 2], [6, 86, 2]],
+          47: [[4, 79, 2], [6, 84, 2]],
+          51: [[4, 81, 2], [6, 84, 2]],
+          55: [[4, 77, 2], [6, 81, 2]],
+          57: [[4, 82, 2], [6, 84, 2]]
+        };
+
+        function pushHumanEvent(type, baseTime, baseDur, baseLevel, payload, skipHumanTiming) {
+          const jitter = skipHumanTiming ? 0 : (rand() < 0.5 ? -1 : 1) * (0.005 + rand() * 0.010);
+          const velFactor = 0.94 + rand() * 0.12;
+          const durFactor = 0.95 + rand() * 0.10;
+          const t = Math.max(0, Math.min(SYNTH_TOTAL_DURATION - 0.06, baseTime + jitter));
+          const dur = Math.max(0.03, Math.min(SYNTH_TOTAL_DURATION - 0.04 - t, baseDur * durFactor));
+          events.push({
+            type,
+            time: t,
+            dur,
+            level: baseLevel * velFactor,
+            payload
+          });
+        }
+
+        function subTime(barIdx, sub16) {
+          const barStart = barStartTimes[barIdx];
+          const barDur = barDurations[barIdx];
+          const subSec = barDur / 8;
+          /* Ligero swing ranchero en las segundas corcheas de cada tiempo (sub 2 y 6) */
+          let swing = 0;
+          if (sub16 === 2 || sub16 === 6) {
+            swing = 0.015 * (barDur / BASE_BAR_SEC);
+          } else if (sub16 === 1 || sub16 === 3 || sub16 === 5 || sub16 === 7) {
+            swing = 0.007 * (barDur / BASE_BAR_SEC);
+          }
+          return barStart + sub16 * subSec + swing;
+        }
+
+        for (let b = 0; b < barChords.length; b++) {
+          const chordKey = barChords[b];
+          const chord = CHORDS_F_MAJOR[chordKey];
+          const barDur = barDurations[b];
+          const subSec = barDur / 8;
+          const isStrongSection = (b >= 28 && b <= 35) || (b >= 44 && b <= 59);
+          const isPhraseEnd = (b === 3 || b === 7 || b === 11 || b === 15 || b === 19 || b === 23 || b === 27 || b === 31 || b === 35 || b === 39 || b === 43 || b === 47 || b === 51 || b === 55 || b === 59);
+
+          /* Tuba: tonica en tiempo 1, quinta en tiempo 2, y nota de paso al cambiar de acorde */
+          pushHumanEvent("tuba", subTime(b, 0), subSec * 3.1, 1.0, { midi: chord.root }, b === 0);
+          pushHumanEvent("tuba", subTime(b, 4), subSec * 2.6, 0.9, { midi: chord.fifth }, false);
+          if (b + 1 < barChords.length && barChords[b + 1] !== chordKey) {
+            const nextChord = CHORDS_F_MAJOR[barChords[b + 1]];
+            const passMidi = getTubaPassingNote(chord.root, nextChord.root);
+            pushHumanEvent("tuba", subTime(b, 6), subSec * 1.6, 0.78, { midi: passMidi }, false);
+          }
+
+          /* Tambora: golpe grave en tiempo 1 y aro/baqueta en tiempo 2 */
+          pushHumanEvent("tambora", subTime(b, 0), 0.21, isStrongSection ? 1.0 : 0.88, { kind: "bass" }, b === 0);
+          pushHumanEvent("tambora", subTime(b, 4), 0.10, isStrongSection ? 0.92 : 0.80, { kind: "rim" }, false);
+
+          /* Charchetas y trombones: acordes de 3 notas a contratiempo (95-115 ms) */
+          const offDurChar = 0.095 + rand() * 0.015;
+          const offDurTrom = 0.102 + rand() * 0.013;
+          const brassVel = isStrongSection ? 1.04 : 0.88;
+          pushHumanEvent("charcheta", subTime(b, 2), offDurChar, brassVel, { notes: chord.charcheta }, false);
+          pushHumanEvent("charcheta", subTime(b, 6), offDurChar, brassVel * 0.96, { notes: chord.charcheta }, false);
+          pushHumanEvent("trombone", subTime(b, 2), offDurTrom, brassVel * 0.92, { notes: chord.trombone }, false);
+          pushHumanEvent("trombone", subTime(b, 6), offDurTrom, brassVel * 0.88, { notes: chord.trombone }, false);
+
+          /* Tarola: patron constante con redobles y rellenos de frase */
+          pushHumanEvent("tarola", subTime(b, 2), 0.11, 0.82, {}, false);
+          pushHumanEvent("tarola", subTime(b, 6), 0.11, 0.86, {}, false);
+          pushHumanEvent("tarola", subTime(b, 3), 0.07, 0.28, {}, false);
+          if (b === 0 || b === 3 || isPhraseEnd) {
+            const rollStart = b === 59 ? 3 : 5;
+            const rollSteps = b === 59 ? 10 : 6;
+            const stepDur = ((8 - rollStart) * subSec) / rollSteps;
+            for (let r = 0; r < rollSteps; r++) {
+              const tRoll = barStartTimes[b] + rollStart * subSec + r * stepDur;
+              const levelRoll = 0.44 + (r / rollSteps) * 0.48;
+              pushHumanEvent("tarola", tRoll, 0.085, levelRoll, {}, false);
+            }
+          }
+
+          /* Platillos en entradas de seccion */
+          if (b === 0 || b === 4 || b === 28 || b === 36 || b === 44 || b === 56) {
+            pushHumanEvent("cymbal", subTime(b, 0), 0.72, b === 28 || b === 44 ? 0.98 : 0.82, {}, b === 0);
+          }
+
+          /* Trompetas */
+          const tNotes = trumpetScore[b];
+          if (tNotes) {
+            const tVol = b >= 28 && b <= 35 ? 0.25 : (b >= 36 && b <= 43 ? 0.26 : (b >= 44 ? 0.25 : 0.21));
+            for (let i = 0; i < tNotes.length; i++) {
+              const n = tNotes[i];
+              pushHumanEvent("trumpet", subTime(b, n[0]), n[3] * subSec * 0.92, tVol, {
+                lead: n[1],
+                third: n[2],
+                opts: n[4] || {}
+              }, b === 0 && i === 0);
+            }
+          }
+
+          /* Clarinetes */
+          const cNotes = clarinetScore[b];
+          if (cNotes) {
+            const cVol = b >= 36 && b <= 43 ? 0.21 : 0.17;
+            for (let i = 0; i < cNotes.length; i++) {
+              const n = cNotes[i];
+              pushHumanEvent("clarinet", subTime(b, n[0]), n[2] * subSec * 0.92, cVol, {
+                midi: n[1]
+              }, false);
+            }
+          }
+        }
+
+        /* Acorde final sostenido en Fa Mayor hasta completar los 72.0 segundos */
+        const finalDur = 3.05;
+        const chordFinal = CHORDS_F_MAJOR.I;
+        pushHumanEvent("tuba", finalHoldStart, finalDur, 1.05, { midi: chordFinal.root }, true);
+        pushHumanEvent("trombone", finalHoldStart, finalDur * 0.96, 1.0, { notes: chordFinal.trombone }, true);
+        pushHumanEvent("charcheta", finalHoldStart, finalDur * 0.94, 0.95, { notes: chordFinal.charcheta }, true);
+        pushHumanEvent("trumpet", finalHoldStart, finalDur * 0.96, 0.27, { lead: 77, third: 72, opts: {} }, true);
+        pushHumanEvent("clarinet", finalHoldStart, finalDur * 0.94, 0.21, { midi: 81 }, true);
+        pushHumanEvent("tambora", finalHoldStart, 0.24, 1.05, { kind: "bass" }, true);
+        pushHumanEvent("tarola", finalHoldStart, 0.15, 0.98, {}, true);
+        pushHumanEvent("cymbal", finalHoldStart, 1.45, 1.0, {}, true);
+
+        events.sort((a, b) => a.time - b.time);
+        return events;
+      }
+
+      const SCORE_EVENTS = buildCorridoScore();
+
+      function findEventIndexAtTime(t) {
+        let lo = 0;
+        let hi = SCORE_EVENTS.length;
+        while (lo < hi) {
+          const mid = (lo + hi) >>> 1;
+          if (SCORE_EVENTS[mid].time < t) {
+            lo = mid + 1;
+          } else {
+            hi = mid;
+          }
+        }
+        return lo;
+      }
+
+      function dispatchScoreEvent(ev, ctxTime) {
+        const p = ev.payload;
+        if (ev.type === "tuba") {
+          triggerTuba(ctxTime, p.midi, ev.dur, ev.level);
+        } else if (ev.type === "charcheta") {
+          triggerBrassSectionChord(ctxTime, p.notes, ev.dur, ev.level, false);
+        } else if (ev.type === "trombone") {
+          triggerBrassSectionChord(ctxTime, p.notes, ev.dur, ev.level, true);
+        } else if (ev.type === "trumpet") {
+          triggerTrumpets(ctxTime, p.lead, p.third, ev.dur, ev.level, p.opts);
+        } else if (ev.type === "clarinet") {
+          triggerClarinet(ctxTime, p.midi, ev.dur, ev.level);
+        } else if (ev.type === "tambora") {
+          triggerTambora(ctxTime, p.kind, ev.level);
+        } else if (ev.type === "tarola") {
+          triggerTarola(ctxTime, ev.level, ev.dur);
+        } else if (ev.type === "cymbal") {
+          triggerCymbal(ctxTime, ev.level, ev.dur);
+        }
+      }
+
+      function startSynthScheduler() {
+        stopSynthScheduler();
+        cycleStartCtxTime = audioCtx.currentTime - state.synthTime;
+        nextEventIndex = findEventIndexAtTime(state.synthTime);
+
+        schedulerId = setInterval(() => {
+          if (!state.isPlaying || state.sourceType !== "synth" || !audioCtx) {
+            return;
+          }
+          const nowCtx = audioCtx.currentTime;
+          const horizonCtx = nowCtx + SCHEDULE_AHEAD_SEC;
+
+          while (true) {
+            if (nextEventIndex < SCORE_EVENTS.length) {
+              const ev = SCORE_EVENTS[nextEventIndex];
+              const evCtxTime = cycleStartCtxTime + ev.time;
+              if (evCtxTime <= horizonCtx) {
+                if (evCtxTime >= nowCtx - 0.02) {
+                  dispatchScoreEvent(ev, Math.max(nowCtx, evCtxTime));
+                }
+                nextEventIndex++;
+                continue;
+              }
+              break;
+            }
+
+            const cycleEndCtx = cycleStartCtxTime + SYNTH_TOTAL_DURATION;
+            if (state.loopEnabled) {
+              if (cycleEndCtx <= horizonCtx) {
+                cycleStartCtxTime += SYNTH_TOTAL_DURATION;
+                nextEventIndex = 0;
+                continue;
+              }
+              break;
+            } else {
+              if (nowCtx >= cycleEndCtx) {
+                state.synthTime = SYNTH_TOTAL_DURATION;
+                state.isPlaying = false;
+                stopSynthScheduler();
+                updatePlayButtonUI();
+                updatePlayerProgressUI();
+              }
+              break;
+            }
+          }
+        }, SCHEDULER_INTERVAL_MS);
+      }
+
+      function stopSynthScheduler() {
+        if (schedulerId !== null) {
+          clearInterval(schedulerId);
+          schedulerId = null;
+        }
+      }
+
+      function updatePlayButtonUI() {
+        iconPlay.hidden = state.isPlaying;
+        iconPause.hidden = !state.isPlaying;
+        playPauseLabel.textContent = state.isPlaying ? "Pausar" : "Reproducir";
+      }
+
+      function updateLoopButtonUI() {
+        btnLoopToggle.classList.toggle("is-active", state.loopEnabled);
+        btnLoopToggle.setAttribute("aria-pressed", state.loopEnabled ? "true" : "false");
+        loopToggleLabel.textContent = state.loopEnabled ? "Bucle activado" : "Bucle desactivado";
+      }
+
+      function updateSourceToggleUI() {
+        if (state.sourceType === "corrido") {
+          toggleSourceLabel.textContent = "Usar sintetizador";
+        } else {
+          toggleSourceLabel.textContent = "Usar pista principal";
+        }
+      }
+
+      function getCurrentAudioDuration() {
+        if (state.sourceType === "synth") {
+          return SYNTH_TOTAL_DURATION;
+        }
+        if (mainAudioEl && Number.isFinite(mainAudioEl.duration) && mainAudioEl.duration > 0) {
+          return mainAudioEl.duration;
+        }
+        return state.sourceType === "corrido" ? state.corridoDuration : 0;
+      }
+
+      function playAudio() {
+        ensureAudioContext().catch(() => {});
+        if (state.sourceType === "synth") {
+          if (state.synthTime >= SYNTH_TOTAL_DURATION - 0.05) {
+            state.synthTime = 0;
+          }
+          state.isPlaying = true;
+          state.lastFrameTime = performance.now();
+          startSynthScheduler();
+          updatePlayButtonUI();
+          return Promise.resolve(true);
+        } else if (mainAudioEl) {
+          ensureMainMediaSource();
+          mainAudioEl.loop = state.loopEnabled;
+          mainAudioEl.muted = false;
+          mainAudioEl.volume = state.volume;
+          if (mainAudioEl.ended) {
+            mainAudioEl.currentTime = 0;
+          }
+          try {
+            const playPromise = mainAudioEl.play();
+            state.isPlaying = true;
+            updatePlayButtonUI();
+            if (playPromise && typeof playPromise.then === "function") {
+              return playPromise.then(() => true).catch(() => {
+                state.isPlaying = false;
+                updatePlayButtonUI();
+                showToast("No se pudo reproducir la pista; prueba el sintetizador o Cargar MP3.");
+                return false;
+              });
+            }
+            return Promise.resolve(true);
+          } catch (err) {
+            state.isPlaying = false;
+            updatePlayButtonUI();
+            showToast("No se pudo reproducir la pista; prueba el sintetizador o Cargar MP3.");
+            return Promise.resolve(false);
+          }
+        }
+        updatePlayButtonUI();
+        return Promise.resolve(false);
+      }
+
+      function pauseAudio() {
+        if (state.sourceType === "synth" && state.isPlaying && audioCtx) {
+          const elapsed = audioCtx.currentTime - cycleStartCtxTime;
+          state.synthTime = state.loopEnabled ? (elapsed % SYNTH_TOTAL_DURATION) : Math.min(SYNTH_TOTAL_DURATION, Math.max(0, elapsed));
+        }
+        state.isPlaying = false;
+        stopSynthScheduler();
+        if (mainAudioEl && !mainAudioEl.paused) {
+          mainAudioEl.pause();
+        }
+        updatePlayButtonUI();
+      }
+
+      function getReferencePlaybackTime() {
+        if (state.sourceType === "synth") {
+          return (state.synthTime / SYNTH_TOTAL_DURATION) * VERSE_REF_TOTAL;
+        }
+        if (mainAudioEl && Number.isFinite(mainAudioEl.currentTime)) {
+          return mainAudioEl.currentTime;
+        }
+        return 0;
+      }
+
+      function seekToRatio(ratio) {
+        const clamped = Math.max(0, Math.min(1, ratio));
+        let refTime = 0;
+        if (state.sourceType === "synth") {
+          state.synthTime = clamped * SYNTH_TOTAL_DURATION;
+          refTime = (state.synthTime / SYNTH_TOTAL_DURATION) * VERSE_REF_TOTAL;
+          if (state.isPlaying && audioCtx) {
+            cycleStartCtxTime = audioCtx.currentTime - state.synthTime;
+            nextEventIndex = findEventIndexAtTime(state.synthTime);
+          }
+        } else if (mainAudioEl) {
+          const total = getCurrentAudioDuration();
+          if (total > 0) {
+            mainAudioEl.currentTime = clamped * total;
+            refTime = mainAudioEl.currentTime;
+          }
+        }
+        if (state.started) {
+          state.flowerTime = refTime < 26.5 ? refTime : Math.max(26.5, refTime);
+        }
+        updatePlayerProgressUI();
+      }
+
+      function renderReflectionByIndex(targetIdx, immediate) {
+        if (!VERSOS_TIEMPOS.length) {
+          if (reflectionCardEl) {
+            reflectionCardEl.classList.remove("is-instrumental");
+          }
+          reflectionSectionEl.textContent = "";
+          reflectionTextEl.textContent = "";
+          if (reflectionNextEl) {
+            reflectionNextEl.textContent = "";
+          }
+          return;
+        }
+        const safeIdx = Math.max(0, Math.min(VERSOS_TIEMPOS.length - 1, targetIdx));
+        const item = VERSOS_TIEMPOS[safeIdx];
+        const nextItem = safeIdx + 1 < VERSOS_TIEMPOS.length ? VERSOS_TIEMPOS[safeIdx + 1] : null;
+        const sectionTitle = getVerseSectionLabel(safeIdx, item);
+        const isInstrumental = Boolean(item && item.instrumental === true);
+        const currentText = item ? item.texto : "";
+        const nextText = nextItem ? ("Siguiente: " + nextItem.texto) : "Fin de la pista";
+
+        if (state.started) {
+          cosmicFlower.triggerPetalWave(0.95);
+        }
+
+        if (state.reflectionFadeTimer) {
+          clearTimeout(state.reflectionFadeTimer);
+          state.reflectionFadeTimer = null;
+        }
+
+        if (immediate || reduceMotion) {
+          if (reflectionCardEl) {
+            reflectionCardEl.classList.toggle("is-instrumental", isInstrumental);
+          }
+          reflectionSectionEl.textContent = sectionTitle;
+          reflectionTextEl.textContent = currentText;
+          reflectionTextEl.classList.remove("is-fading");
+          if (reflectionNextEl) {
+            reflectionNextEl.textContent = nextText;
+            reflectionNextEl.classList.remove("is-fading");
+          }
+          return;
+        }
+
+        reflectionTextEl.classList.add("is-fading");
+        if (reflectionNextEl) {
+          reflectionNextEl.classList.add("is-fading");
+        }
+        state.reflectionFadeTimer = setTimeout(() => {
+          state.reflectionFadeTimer = null;
+          if (reflectionCardEl) {
+            reflectionCardEl.classList.toggle("is-instrumental", isInstrumental);
+          }
+          reflectionSectionEl.textContent = sectionTitle;
+          reflectionTextEl.textContent = currentText;
+          reflectionTextEl.classList.remove("is-fading");
+          if (reflectionNextEl) {
+            reflectionNextEl.textContent = nextText;
+            reflectionNextEl.classList.remove("is-fading");
+          }
+        }, 180);
+      }
+
+      function updatePlayerProgressUI() {
+        let current = 0;
+        const total = getCurrentAudioDuration();
+
+        if (state.sourceType === "synth") {
+          current = state.synthTime;
+        } else if (mainAudioEl) {
+          current = mainAudioEl.currentTime || 0;
+        }
+
+        const pct = total > 0 ? Math.min(100, (current / total) * 100) : 0;
+        progressFill.style.width = pct.toFixed(2) + "%";
+        progressTrack.setAttribute("aria-valuenow", String(Math.round(pct)));
+        timeReadoutEl.textContent = formatTime(current) + " / " + formatTime(total);
+
+        let verseTime = current;
+        if (state.sourceType === "synth") {
+          verseTime = (current / SYNTH_TOTAL_DURATION) * VERSE_REF_TOTAL;
+        }
+
+        let targetIdx = 0;
+        for (let i = VERSOS_TIEMPOS.length - 1; i >= 0; i--) {
+          if (verseTime >= VERSOS_TIEMPOS[i].segundo) {
+            targetIdx = i;
+            break;
+          }
+        }
+
+        if (targetIdx !== state.currentReflectionIdx) {
+          const isInitialRender = state.currentReflectionIdx === -1;
+          state.currentReflectionIdx = targetIdx;
+          renderReflectionByIndex(targetIdx, isInitialRender);
+        }
+      }
+
+      /* Carga de audio local (MP3 / WAV / OGG) */
+      function handleLocalAudioFile(file) {
+        if (!file) {
+          return;
+        }
+        ensureAudioContext().catch(() => {});
+        stopSynthScheduler();
+
+        if (objectUrl) {
+          URL.revokeObjectURL(objectUrl);
+        }
+        objectUrl = URL.createObjectURL(file);
+        state.sourceType = "file";
+        mainAudioEl.src = objectUrl;
+        mainAudioEl.loop = state.loopEnabled;
+        mainAudioEl.muted = false;
+        mainAudioEl.volume = state.volume;
+        mainAudioEl.load();
+        ensureMainMediaSource();
+
+        trackNameEl.textContent = file.name;
+        updateSourceToggleUI();
+
+        try {
+          const playPromise = mainAudioEl.play();
+          state.isPlaying = true;
+          updatePlayButtonUI();
+          if (playPromise && typeof playPromise.then === "function") {
+            playPromise.then(() => {
+              showToast("Audio local cargado y conectado al escenario 3D.");
+            }).catch(() => {
+              state.isPlaying = false;
+              updatePlayButtonUI();
+              showToast("Pulsa Reproducir para iniciar tu archivo de audio.");
+            });
+          } else {
+            showToast("Audio local cargado y conectado al escenario 3D.");
+          }
+        } catch (err) {
+          state.isPlaying = false;
+          updatePlayButtonUI();
+          showToast("Pulsa Reproducir para iniciar tu archivo de audio.");
+        }
+        updatePlayerProgressUI();
+      }
+
+      function switchToSynth() {
+        if (mainAudioEl && !mainAudioEl.paused) {
+          mainAudioEl.pause();
+        }
+        state.sourceType = "synth";
+        trackNameEl.textContent = "Banda sinaloense sintetizada (alternativa en vivo)";
+        updateSourceToggleUI();
+        if (state.isPlaying) {
+          ensureAudioContext().catch(() => {});
+          startSynthScheduler();
+        }
+        updatePlayerProgressUI();
+        showToast("Cambiaste al sintetizador de banda sinaloense.");
+      }
+
+      function switchToMainCorrido() {
+        stopSynthScheduler();
+        if (state.sourceType === "file") {
+          if (mainAudioEl && !mainAudioEl.paused) {
+            mainAudioEl.pause();
+          }
+          if (objectUrl) {
+            URL.revokeObjectURL(objectUrl);
+            objectUrl = null;
+          }
+          mainAudioEl.src = DEFAULT_CORRIDO_SRC;
+          mainAudioEl.load();
+        }
+        state.sourceType = "corrido";
+        trackNameEl.textContent = "Pista principal (corrido.mp3)";
+        updateSourceToggleUI();
+        if (state.isPlaying) {
+          ensureAudioContext().catch(() => {});
+          ensureMainMediaSource();
+          mainAudioEl.loop = state.loopEnabled;
+          mainAudioEl.muted = false;
+          mainAudioEl.volume = state.volume;
+          if (mainAudioEl.ended) {
+            mainAudioEl.currentTime = 0;
+          }
+          try {
+            const playPromise = mainAudioEl.play();
+            if (playPromise && typeof playPromise.catch === "function") {
+              playPromise.catch(() => {
+                state.isPlaying = false;
+                updatePlayButtonUI();
+                showToast("Pulsa Reproducir para iniciar la pista principal.");
+              });
+            }
+          } catch (err) {
+            state.isPlaying = false;
+            updatePlayButtonUI();
+            showToast("Pulsa Reproducir para iniciar la pista principal.");
+          }
+        }
+        updatePlayerProgressUI();
+        showToast("Pista principal activa (corrido.mp3).");
+      }
+
+      function toggleAudioSource() {
+        if (state.sourceType === "corrido") {
+          switchToSynth();
+        } else {
+          switchToMainCorrido();
+        }
+      }
+
+      /* Escena Canvas 3D: Flor Cosmica 3D en perspectiva con particulas aditivas, cometas orbitales y chispas de codigo */
+      let width = window.innerWidth;
+      let height = window.innerHeight;
+      let dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+      const MODE_PALETTES = {
+        gold: {
+          primary: "#FFD166",
+          secondary: "#FF1E42",
+          tertiary: "#FFF0F3",
+          glow: "rgba(255, 30, 66, 0.55)",
+          beamA: "rgba(201, 8, 42, 0.14)",
+          beamB: "rgba(245, 166, 35, 0.08)"
+        },
+        neon: {
+          primary: "#00E5FF",
+          secondary: "#FF1E8A",
+          tertiary: "#FFFFFF",
+          glow: "rgba(0, 229, 255, 0.54)",
+          beamA: "rgba(255, 30, 138, 0.14)",
+          beamB: "rgba(0, 229, 255, 0.11)"
+        },
+        fire: {
+          primary: "#FF9E2C",
+          secondary: "#FF2E1F",
+          tertiary: "#FFF2CC",
+          glow: "rgba(255, 90, 31, 0.58)",
+          beamA: "rgba(255, 46, 31, 0.15)",
+          beamB: "rgba(255, 158, 44, 0.10)"
+        }
+      };
+
+      const FLOWER_MODE_THEMES = {
+        gold: {
+          innerBase: "#C9082A",
+          innerMid: "#FF1E42",
+          innerTip: "#FF758F",
+          silkStroke: "rgba(255, 240, 244, 0.28)",
+          silkHighlight: "rgba(255, 232, 238, 0.34)",
+          innerStroke: "rgba(255, 30, 66, 0.26)",
+          galaxyMain: "#FFFFFF",
+          galaxyAlt: "#FFE8EE",
+          galaxyPinkSilver: "#FFC2D4",
+          cometHead: "#FF1E42",
+          cometCore: "#FFFFFF",
+          emberPrimary: "#FFD166",
+          emberSecondary: "#FF1E42",
+          coreGlowA: "rgba(255, 30, 66, 0.42)",
+          coreGlowB: "rgba(201, 8, 42, 0.18)",
+          coreGlowGold: "rgba(255, 209, 102, 0.16)"
+        },
+        neon: {
+          innerBase: "#C90858",
+          innerMid: "#FF1E8A",
+          innerTip: "#FF7AD9",
+          silkStroke: "rgba(210, 250, 255, 0.28)",
+          silkHighlight: "rgba(0, 229, 255, 0.34)",
+          innerStroke: "rgba(255, 30, 138, 0.26)",
+          galaxyMain: "#FFFFFF",
+          galaxyAlt: "#B8F8FF",
+          galaxyPinkSilver: "#00E5FF",
+          cometHead: "#00E5FF",
+          cometCore: "#FFFFFF",
+          emberPrimary: "#00E5FF",
+          emberSecondary: "#FF2A5F",
+          coreGlowA: "rgba(255, 30, 138, 0.44)",
+          coreGlowB: "rgba(0, 229, 255, 0.20)",
+          coreGlowGold: "rgba(0, 229, 255, 0.16)"
+        },
+        fire: {
+          innerBase: "#C81408",
+          innerMid: "#FF3B1F",
+          innerTip: "#FF9E2C",
+          silkStroke: "rgba(255, 242, 204, 0.28)",
+          silkHighlight: "rgba(255, 209, 102, 0.34)",
+          innerStroke: "rgba(255, 90, 31, 0.26)",
+          galaxyMain: "#FFFFFF",
+          galaxyAlt: "#FFF2CC",
+          galaxyPinkSilver: "#FFD166",
+          cometHead: "#FF7A18",
+          cometCore: "#FFFFFF",
+          emberPrimary: "#FF9E2C",
+          emberSecondary: "#FF2E43",
+          coreGlowA: "rgba(255, 59, 31, 0.44)",
+          coreGlowB: "rgba(255, 158, 44, 0.22)",
+          coreGlowGold: "rgba(255, 209, 102, 0.20)"
+        }
+      };
+
+      function clamp01(v) {
+        return v < 0 ? 0 : (v > 1 ? 1 : v);
+      }
+
+      function smoothstep01(v) {
+        const t = clamp01(v);
+        return t * t * (3 - 2 * t);
+      }
+
+      function createGlowSprite(coreHex, midHex, size) {
+        const c = document.createElement("canvas");
+        c.width = size;
+        c.height = size;
+        const gctx = c.getContext("2d");
+        const half = size * 0.5;
+        const grad = gctx.createRadialGradient(half, half, 0, half, half, half);
+        grad.addColorStop(0, "#FFFFFF");
+        grad.addColorStop(0.24, coreHex);
+        grad.addColorStop(0.58, midHex);
+        grad.addColorStop(1, "rgba(0, 0, 0, 0)");
+        gctx.fillStyle = grad;
+        gctx.fillRect(0, 0, size, size);
+        return c;
+      }
+
+      class CosmicFlower3D {
+        constructor() {
+          this.mode = "gold";
+          this.isMobile = window.innerWidth < 768;
+          this.particleCount = 0;
+          this.innerRingRadii = [];
+          this.innerRingCount = 0;
+
+          this.bx = null;
+          this.by = null;
+          this.bz = null;
+          this.size = null;
+          this.phase = null;
+          this.twinkleSpeed = null;
+          this.uParam = null;
+          this.ringParam = null;
+          this.layer = null;
+          this.colorKind = null;
+
+          this.scratchVec = { x: 0, y: 0, z: 0 };
+          this.scratchProj = { x: 0, y: 0, factor: 1, z: 0 };
+          this.centerX = 0;
+          this.centerY = 0;
+          this.smoothPointerX = 0;
+          this.smoothPointerY = 0;
+
+          /* 24 cometas luminosos continuos: 12 rojos en petalos interiores + 12 blancos en lazos exteriores */
+          this.innerCometCount = 12;
+          this.innerComets = [];
+          for (let i = 0; i < this.innerCometCount; i++) {
+            this.innerComets.push({
+              phase: (i / this.innerCometCount) * Math.PI * 2,
+              speed: 0.24 + (i % 3) * 0.035,
+              size: 1.7 + (i % 3) * 0.25
+            });
+          }
+
+          const outerCometPetals = [0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14];
+          this.outerCometCount = 12;
+          this.outerComets = [];
+          for (let i = 0; i < this.outerCometCount; i++) {
+            this.outerComets.push({
+              petalIdx: outerCometPetals[i],
+              phase: (i / this.outerCometCount) * Math.PI * 2,
+              speed: 0.42 + (i % 4) * 0.06,
+              size: 1.85 + (i % 3) * 0.35
+            });
+          }
+
+          /* Ondas radiales luminosas sobre la flor al cambiar de seccion o pulsar Rafaga de codigo */
+          this.maxPetalWaves = 8;
+          this.petalWaveCursor = 0;
+          this.petalWaves = Array.from({ length: this.maxPetalWaves }, () => ({
+            active: false,
+            radius: 0,
+            maxRadius: 1.95,
+            speed: 1.45,
+            strength: 1.0
+          }));
+
+          /* Pool de cometas para Rafaga de codigo */
+          this.maxBurstComets = 48;
+          this.burstCursor = 0;
+          this.burstComets = Array.from({ length: this.maxBurstComets }, () => ({
+            active: false,
+            petalIdx: 0,
+            side: 1,
+            progress: 0,
+            speed: 1,
+            size: 2.0,
+            colorKind: 0
+          }));
+
+          this.spriteAtlas = this.buildSpriteAtlas();
+          this.allocateBuffers(this.isMobile);
+        }
+
+        resetBloom() {
+          for (let i = 0; i < this.maxBurstComets; i++) {
+            this.burstComets[i].active = false;
+          }
+          for (let i = 0; i < this.maxPetalWaves; i++) {
+            this.petalWaves[i].active = false;
+          }
+        }
+
+        triggerPetalWave(strength) {
+          const w = this.petalWaves[this.petalWaveCursor];
+          this.petalWaveCursor = (this.petalWaveCursor + 1) % this.maxPetalWaves;
+          w.active = true;
+          w.radius = 0.02;
+          w.maxRadius = 1.95;
+          w.speed = 1.42;
+          w.strength = typeof strength === "number" ? strength : 1.0;
+        }
+
+        buildSpriteAtlas() {
+          const atlas = {};
+          const keys = Object.keys(FLOWER_MODE_THEMES);
+          for (let i = 0; i < keys.length; i++) {
+            const key = keys[i];
+            const theme = FLOWER_MODE_THEMES[key];
+            atlas[key] = [
+              createGlowSprite(theme.innerMid, theme.innerBase + "44", 24),
+              createGlowSprite(theme.cometCore, theme.cometHead + "55", 24),
+              createGlowSprite(theme.emberPrimary, theme.cometHead + "55", 24)
+            ];
+          }
+          return atlas;
+        }
+
+        setMode(mode) {
+          if (FLOWER_MODE_THEMES[mode]) {
+            this.mode = mode;
+          }
+        }
+
+        resize(viewportWidth) {
+          const nextMobile = viewportWidth < 768;
+          if (nextMobile !== this.isMobile) {
+            this.isMobile = nextMobile;
+            this.allocateBuffers(nextMobile);
+          }
+        }
+
+        getOuterPetalPoint(petalIdx, s, widthScale, lengthScale, side) {
+          const gAngle = (petalIdx / 16) * Math.PI * 2;
+          const cosG = Math.cos(gAngle);
+          const sinG = Math.sin(gAngle);
+          const tierLen = (petalIdx % 2 === 0 ? 1.0 : 0.92) * lengthScale;
+          const tierZ = petalIdx % 2 === 0 ? 0.07 : -0.05;
+          const lx = 0.62 + 0.60 * tierLen * (1 - Math.cos(s));
+          const ly = side * 0.195 * widthScale * Math.sin(s) * (0.68 + 0.32 * Math.sin(s * 0.5));
+          const px = lx * cosG - ly * sinG;
+          const py = lx * sinG + ly * cosG;
+          const normL = Math.max(0, (lx - 0.62) / 1.2);
+          const pz = -0.14 * Math.sin(s * 0.5) + 0.15 * Math.pow(normL, 1.35) + tierZ;
+          return { x: px, y: py, z: pz };
+        }
+
+        allocateBuffers(isMobile) {
+          const arms = 8;
+          const armSteps = isMobile ? 28 : 40;
+          const numRings = isMobile ? 8 : 11;
+          this.innerRingCount = numRings;
+          this.innerRingRadii = [];
+
+          let innerTotal = 0;
+          const ringMeta = [];
+          for (let rIdx = 0; rIdx < numRings; rIdx++) {
+            const ringNorm = rIdx / (numRings - 1);
+            const R = 0.16 + ringNorm * 0.78;
+            this.innerRingRadii.push(R);
+            const ptsPerPetal = Math.round((isMobile ? 11 : 14) + rIdx * (isMobile ? 1.8 : 2.5));
+            ringMeta.push({ R, ringNorm, ptsPerPetal });
+            innerTotal += 12 * (ptsPerPetal - 1);
+          }
+
+          const outerHalfPts = isMobile ? 20 : 28;
+          const outerTotal = 16 * 2 * outerHalfPts;
+
+          const striation1Pts = isMobile ? 15 : 21;
+          const striation2Pts = isMobile ? 11 : 15;
+          const spinePts = isMobile ? 9 : 13;
+          const auraPts = isMobile ? 10 : 14;
+          const stage4Total = 16 * (2 * striation1Pts + 2 * striation2Pts + spinePts + 2 * auraPts);
+
+          const stage1Total = arms * armSteps;
+          const total = stage1Total + innerTotal + outerTotal + stage4Total;
+          this.particleCount = total;
+
+          this.bx = new Float32Array(total);
+          this.by = new Float32Array(total);
+          this.bz = new Float32Array(total);
+          this.size = new Float32Array(total);
+          this.phase = new Float32Array(total);
+          this.twinkleSpeed = new Float32Array(total);
+          this.uParam = new Float32Array(total);
+          this.ringParam = new Float32Array(total);
+          this.layer = new Uint8Array(total);
+          this.colorKind = new Uint8Array(total);
+
+          let idx = 0;
+
+          /* Capa 0: Etapa 1 - 8 brazos espirales simetricos desde (0, 0, 0) */
+          for (let k = 0; k < arms; k++) {
+            const baseA = (k / arms) * Math.PI * 2;
+            for (let s = 1; s <= armSteps; s++) {
+              const u = s / armSteps;
+              const ang = baseA + 0.78 * Math.pow(u, 0.86);
+              const r = u * 0.90;
+              this.bx[idx] = Math.cos(ang) * r;
+              this.by[idx] = Math.sin(ang) * r;
+              this.bz[idx] = -0.24 * Math.sin(u * Math.PI * 0.88);
+              this.size[idx] = 1.15 + (1 - u) * 0.35;
+              this.phase[idx] = k * 0.7 + u * 4.0;
+              this.twinkleSpeed[idx] = 2.0;
+              this.uParam[idx] = u;
+              this.ringParam[idx] = 0;
+              this.layer[idx] = 0;
+              this.colorKind[idx] = u < 0.45 ? 0 : 1;
+              idx++;
+            }
+          }
+
+          /* Capa 1: Etapa 2 - 12 petalos rojos interiores en curvas concentricas r(theta) = R * |sin(6*theta)|^0.72 */
+          for (let rIdx = 0; rIdx < numRings; rIdx++) {
+            const meta = ringMeta[rIdx];
+            const R = meta.R;
+            const ringNorm = meta.ringNorm;
+            const ptsPerPetal = meta.ptsPerPetal;
+
+            for (let p = 0; p < 12; p++) {
+              const thetaMin = p * (Math.PI / 6);
+              for (let j = 1; j < ptsPerPetal; j++) {
+                const frac = j / ptsPerPetal;
+                const theta = thetaMin + frac * (Math.PI / 6);
+                const lobe = Math.pow(Math.abs(Math.sin(6 * theta)), 0.72);
+                const r = R * lobe;
+                const normR = r / 0.94;
+                const px = Math.cos(theta) * r;
+                const py = Math.sin(theta) * r;
+                const pz = -0.28 * Math.sin(normR * Math.PI * 0.86) - 0.05 * Math.cos(12 * theta) * normR;
+
+                this.bx[idx] = px;
+                this.by[idx] = py;
+                this.bz[idx] = pz;
+                this.size[idx] = 1.05 + ringNorm * 0.42 + (lobe > 0.88 ? 0.18 : 0);
+                this.phase[idx] = p * 0.52 + rIdx * 0.4 + frac * Math.PI;
+                this.twinkleSpeed[idx] = 1.4 + (rIdx % 3) * 0.35;
+                this.uParam[idx] = lobe;
+                this.ringParam[idx] = ringNorm;
+                this.layer[idx] = 1;
+                if (ringNorm > 0.70 || (lobe > 0.86 && ringNorm > 0.45)) {
+                  this.colorKind[idx] = 2;
+                } else if (ringNorm > 0.30) {
+                  this.colorKind[idx] = 1;
+                } else {
+                  this.colorKind[idx] = 0;
+                }
+                idx++;
+              }
+            }
+          }
+
+          /* Capa 2: Etapa 3 - Contorno exterior nitido de los 16 petalos de galaxia */
+          for (let g = 0; g < 16; g++) {
+            for (let side = -1; side <= 1; side += 2) {
+              for (let j = 1; j <= outerHalfPts; j++) {
+                const u = j / outerHalfPts;
+                const s = u * Math.PI;
+                const pt = this.getOuterPetalPoint(g, s, 1.0, 1.0, side);
+                this.bx[idx] = pt.x;
+                this.by[idx] = pt.y;
+                this.bz[idx] = pt.z;
+                this.size[idx] = 1.15 + (j % 4 === 0 ? 0.40 : 0.12);
+                this.phase[idx] = g * 0.42 + u * 5.0 + (side > 0 ? 0 : 1.1);
+                this.twinkleSpeed[idx] = 2.1 + (j % 4) * 0.45;
+                this.uParam[idx] = u;
+                this.ringParam[idx] = 0;
+                this.layer[idx] = 2;
+                this.colorKind[idx] = j % 3 === 0 ? 1 : 0;
+                idx++;
+              }
+            }
+          }
+
+          /* Capa 3: Etapa 4 - Estrias interiores y capas exteriores de polvo estelar sobre los 16 petalos */
+          for (let g = 0; g < 16; g++) {
+            for (let side = -1; side <= 1; side += 2) {
+              for (let j = 1; j <= striation1Pts; j++) {
+                const u = j / striation1Pts;
+                const pt = this.getOuterPetalPoint(g, u * Math.PI, 0.62, 0.94, side);
+                this.bx[idx] = pt.x;
+                this.by[idx] = pt.y;
+                this.bz[idx] = pt.z;
+                this.size[idx] = 1.05 + (j % 3 === 0 ? 0.35 : 0.08);
+                this.phase[idx] = g * 0.6 + u * 6.0;
+                this.twinkleSpeed[idx] = 2.4 + (j % 3) * 0.5;
+                this.uParam[idx] = u;
+                this.ringParam[idx] = 0.05 + u * 0.35;
+                this.layer[idx] = 3;
+                this.colorKind[idx] = j % 2 === 0 ? 0 : 1;
+                idx++;
+              }
+
+              for (let j = 1; j <= striation2Pts; j++) {
+                const u = j / striation2Pts;
+                const pt = this.getOuterPetalPoint(g, u * Math.PI, 0.32, 0.86, side);
+                this.bx[idx] = pt.x;
+                this.by[idx] = pt.y;
+                this.bz[idx] = pt.z;
+                this.size[idx] = 1.0 + (j % 3 === 0 ? 0.32 : 0.05);
+                this.phase[idx] = g * 0.8 + u * 4.5 + 1.5;
+                this.twinkleSpeed[idx] = 2.6 + (j % 4) * 0.4;
+                this.uParam[idx] = u;
+                this.ringParam[idx] = 0.20 + u * 0.40;
+                this.layer[idx] = 3;
+                this.colorKind[idx] = j % 2 === 0 ? 1 : 2;
+                idx++;
+              }
+
+              for (let j = 1; j <= auraPts; j++) {
+                const u = j / auraPts;
+                const pt = this.getOuterPetalPoint(g, u * Math.PI, 1.16, 1.06, side);
+                this.bx[idx] = pt.x;
+                this.by[idx] = pt.y;
+                this.bz[idx] = pt.z;
+                this.size[idx] = 1.0 + (j % 4 === 0 ? 0.42 : 0.08);
+                this.phase[idx] = g * 0.9 + u * 7.0;
+                this.twinkleSpeed[idx] = 2.8 + (j % 5) * 0.45;
+                this.uParam[idx] = u;
+                this.ringParam[idx] = 0.38 + u * 0.45;
+                this.layer[idx] = 3;
+                this.colorKind[idx] = j % 3 === 0 ? 2 : 1;
+                idx++;
+              }
+            }
+
+            for (let j = 1; j <= spinePts; j++) {
+              const u = j / spinePts;
+              const pt = this.getOuterPetalPoint(g, u * Math.PI, 0, 0.96, 1);
+              this.bx[idx] = pt.x;
+              this.by[idx] = pt.y;
+              this.bz[idx] = pt.z;
+              this.size[idx] = 1.15 + (j % 3 === 0 ? 0.35 : 0.05);
+              this.phase[idx] = g * 0.35 + u * 5.2;
+              this.twinkleSpeed[idx] = 2.2 + (j % 3) * 0.4;
+              this.uParam[idx] = u;
+              this.ringParam[idx] = 0.12 + u * 0.45;
+              this.layer[idx] = 3;
+              this.colorKind[idx] = j % 2 === 0 ? 0 : 1;
+              idx++;
+            }
+          }
+        }
+
+        rotateX(p, angle) {
+          const c = Math.cos(angle);
+          const s = Math.sin(angle);
+          const y = p.y * c - p.z * s;
+          const z = p.y * s + p.z * c;
+          p.y = y;
+          p.z = z;
+          return p;
+        }
+
+        rotateY(p, angle) {
+          const c = Math.cos(angle);
+          const s = Math.sin(angle);
+          const x = p.x * c + p.z * s;
+          const z = -p.x * s + p.z * c;
+          p.x = x;
+          p.z = z;
+          return p;
+        }
+
+        rotateZ(p, angle) {
+          const c = Math.cos(angle);
+          const s = Math.sin(angle);
+          const x = p.x * c - p.y * s;
+          const y = p.x * s + p.y * c;
+          p.x = x;
+          p.y = y;
+          return p;
+        }
+
+        project(x, y, z, scale, distance, out) {
+          const target = out || { x: 0, y: 0, factor: 1, z: 0 };
+          const denom = distance + z;
+          const safeDenom = denom < 0.25 ? 0.25 : denom;
+          const factor = distance / safeDenom;
+          target.x = this.centerX + x * scale * factor;
+          target.y = this.centerY + y * scale * factor;
+          target.factor = factor;
+          target.z = z;
+          return target;
+        }
+
+        transformAndProject(x, y, z, rx, ry, rz, scale, distance, out) {
+          const v = this.scratchVec;
+          v.x = x;
+          v.y = y;
+          v.z = z;
+          this.rotateX(v, rx);
+          this.rotateY(v, ry);
+          this.rotateZ(v, rz);
+          return this.project(v.x, v.y, v.z, scale, distance, out || this.scratchProj);
+        }
+
+        triggerBurst(intensity) {
+          const count = Math.min(32, Math.max(16, Math.round(intensity * 0.55)));
+          for (let i = 0; i < count; i++) {
+            const c = this.burstComets[this.burstCursor];
+            this.burstCursor = (this.burstCursor + 1) % this.maxBurstComets;
+            c.active = true;
+            c.petalIdx = i % 16;
+            c.side = i % 3 === 0 ? -1 : 1;
+            c.progress = 0;
+            c.speed = 0.72 + (i % 5) * 0.11;
+            c.size = 1.9 + (i % 3) * 0.4;
+            c.colorKind = i % 2;
+          }
+        }
+
+        drawOriginSeedStar(ctxRef, theme, sprites, centerX, centerY, pulse, alphaScale) {
+          const haloRadius = 15 + pulse * 6;
+          ctxRef.globalAlpha = 0.62 * alphaScale;
+          ctxRef.drawImage(sprites[0], centerX - haloRadius, centerY - haloRadius, haloRadius * 2, haloRadius * 2);
+
+          const rayLen = 8 + pulse * 4;
+          ctxRef.strokeStyle = theme.cometCore;
+          ctxRef.lineWidth = 0.9;
+          ctxRef.globalAlpha = 0.78 * alphaScale;
+          ctxRef.beginPath();
+          ctxRef.moveTo(centerX - rayLen, centerY);
+          ctxRef.lineTo(centerX + rayLen, centerY);
+          ctxRef.moveTo(centerX, centerY - rayLen);
+          ctxRef.lineTo(centerX, centerY + rayLen);
+          ctxRef.stroke();
+
+          ctxRef.fillStyle = theme.cometCore;
+          ctxRef.globalAlpha = 0.98 * alphaScale;
+          ctxRef.fillRect(centerX - 1.4, centerY - 1.4, 2.8, 2.8);
+        }
+
+        render(ctxRef, now, dt, frameState) {
+          const theme = FLOWER_MODE_THEMES[this.mode] || FLOWER_MODE_THEMES.gold;
+          const sprites = this.spriteAtlas[this.mode] || this.spriteAtlas.gold;
+          const {
+            width: vw,
+            height: vh,
+            centerX,
+            centerY,
+            baseScale,
+            bass,
+            mids,
+            highs,
+            pointerX: ptrX,
+            pointerY: ptrY,
+            reduceMotion: isReduced,
+            started: isStarted,
+            flowerTime
+          } = frameState;
+
+          this.centerX = centerX;
+          this.centerY = centerY;
+          const t = now * 0.001;
+          const mf = isReduced ? 0.65 : 1.0;
+
+          ctxRef.save();
+          ctxRef.globalCompositeOperation = "lighter";
+
+          /* Portada inicial previa a "Iniciar show": unicamente estrella/semilla luminosa en (0, 0, 0) */
+          if (!isStarted) {
+            const idlePulse = 0.5 + 0.5 * Math.sin(t * 2.4 * mf);
+            this.drawOriginSeedStar(ctxRef, theme, sprites, centerX, centerY, idlePulse, 1);
+            ctxRef.restore();
+            return;
+          }
+
+          /* Suavizado del puntero para inclinacion 3D interactiva en perspectiva */
+          const targetPtrX = ((ptrX / Math.max(1, vw)) - 0.5) * 0.34;
+          const targetPtrY = ((ptrY / Math.max(1, vh)) - 0.5) * 0.26;
+          this.smoothPointerX += (targetPtrX - this.smoothPointerX) * Math.min(1, dt * 4.5);
+          this.smoothPointerY += (targetPtrY - this.smoothPointerY) * Math.min(1, dt * 4.5);
+
+          const rx = -0.36 + Math.sin(t * 0.45 * mf) * 0.28 + this.smoothPointerY;
+          const ry = Math.sin(t * 0.34 * mf) * 0.38 + this.smoothPointerX;
+          const rzInner = t * 0.26 * mf + mids * 0.05;
+          const rzOuter = -t * 0.16 * mf - highs * 0.03;
+
+          /* Respiracion reactiva al audio */
+          const breath = 1 + bass * 0.13 + highs * 0.04;
+          const flowerScale = baseScale * 1.38 * breath;
+          const camDist = 4.7;
+
+          /* Parametros de ondulacion viva en z */
+          const wavePhaseBase = t * 2.6 * mf;
+          const waveAmp = 0.12 * (1 + bass * 0.8);
+
+          /* Actualizar ondas radiales luminosas sobre los petalos */
+          let hasActivePetalWaves = false;
+          for (let wIdx = 0; wIdx < this.maxPetalWaves; wIdx++) {
+            const pw = this.petalWaves[wIdx];
+            if (!pw.active) {
+              continue;
+            }
+            pw.radius += dt * pw.speed * mf;
+            if (pw.radius >= pw.maxRadius) {
+              pw.active = false;
+            } else {
+              hasActivePetalWaves = true;
+            }
+          }
+
+          /* 4 etapas progresivas sincronizadas de 0.0 s a 26.5 s (siempre activo tras Iniciar show) */
+          const effectiveTime = Math.max(0, flowerTime);
+          const p1 = clamp01(effectiveTime / 4.5);
+          const stage1Fade = effectiveTime <= 4.5 ? 1 : clamp01(1 - (effectiveTime - 4.5) / 1.8);
+          const p2 = clamp01((effectiveTime - 4.5) / 8.5);
+          const p3 = clamp01((effectiveTime - 13.0) / 8.0);
+          const p4 = clamp01((effectiveTime - 21.0) / 5.5);
+
+          const silkTrace = smoothstep01(p3);
+          const proj = this.scratchProj;
+
+          /* Semilla luminosa en (0, 0, 0) visible durante el nacimiento inicial */
+          if (effectiveTime < 6.2) {
+            const seedFade = effectiveTime < 4.0 ? 1 : clamp01(1 - (effectiveTime - 4.0) / 2.2);
+            const seedProj = this.transformAndProject(0, 0, 0, rx, ry, rzInner, flowerScale, camDist);
+            this.drawOriginSeedStar(ctxRef, theme, sprites, seedProj.x, seedProj.y, 0.5 + bass * 0.5, seedFade);
+          }
+
+          /* Etapa 1 (0.0s - 4.5s): Cabezas cometa trazadoras sobre 8 brazos espirales desde (0,0,0) */
+          if (stage1Fade > 0.01 && p1 > 0.005) {
+            const headU = smoothstep01(p1);
+            for (let k = 0; k < 8; k++) {
+              const baseA = (k / 8) * Math.PI * 2;
+              const ang = baseA + 0.78 * Math.pow(headU, 0.86);
+              const r = headU * 0.90;
+              const px = Math.cos(ang) * r;
+              const py = Math.sin(ang) * r;
+              const pz = -0.24 * Math.sin(headU * Math.PI * 0.88);
+              this.transformAndProject(px, py, pz, rx, ry, rzInner, flowerScale, camDist, proj);
+
+              const haloR = (6.5 + bass * 2.5) * proj.factor;
+              ctxRef.globalAlpha = stage1Fade * 0.92;
+              ctxRef.drawImage(sprites[0], proj.x - haloR, proj.y - haloR, haloR * 2, haloR * 2);
+
+              ctxRef.fillStyle = theme.cometCore;
+              ctxRef.globalAlpha = stage1Fade;
+              ctxRef.fillRect(proj.x - 1.2, proj.y - 1.2, 2.4, 2.4);
+            }
+          }
+
+          /* Etapa 2 (4.5s - 13.0s): Trazos concentricos finos de los 12 petalos rojos r(theta) = R * |sin(6*theta)|^0.72 */
+          if (p2 > 0.01) {
+            const segsPerPetal = this.isMobile ? 10 : 14;
+            const totalRings = this.innerRingCount;
+            ctxRef.lineWidth = 0.65;
+
+            for (let rIdx = 0; rIdx < totalRings; rIdx++) {
+              const ringNorm = rIdx / (totalRings - 1);
+              const ringProgress = smoothstep01((p2 - ringNorm * 0.72) / 0.28);
+              if (ringProgress <= 0.01) {
+                continue;
+              }
+              const R = this.innerRingRadii[rIdx];
+              ctxRef.strokeStyle = ringNorm > 0.70 ? theme.innerTip : (ringNorm > 0.30 ? theme.innerMid : theme.innerBase);
+              ctxRef.globalAlpha = (ringNorm > 0.70 ? 0.30 : 0.24) * ringProgress;
+
+              ctxRef.beginPath();
+              const maxPetalSteps = 12 * segsPerPetal;
+              for (let step = 0; step <= maxPetalSteps; step++) {
+                const theta = (step / maxPetalSteps) * Math.PI * 2;
+                const lobe = Math.pow(Math.abs(Math.sin(6 * theta)), 0.72);
+                const r = R * lobe * (0.25 + 0.75 * ringProgress);
+                const normR = r / 0.94;
+                const waveZ = Math.sin(normR * 5.2 - wavePhaseBase) * waveAmp;
+                const px = Math.cos(theta) * r;
+                const py = Math.sin(theta) * r;
+                const pz = -0.28 * Math.sin(normR * Math.PI * 0.86) - 0.05 * Math.cos(12 * theta) * normR + waveZ;
+                this.transformAndProject(px, py, pz, rx, ry, rzInner, flowerScale, camDist, proj);
+                if (step === 0) {
+                  ctxRef.moveTo(proj.x, proj.y);
+                } else {
+                  ctxRef.lineTo(proj.x, proj.y);
+                }
+              }
+              ctxRef.stroke();
+            }
+          }
+
+          /* Etapa 3 (13.0s - 21.0s): 16 lazos elipticos exteriores con hilos ultrafinos de seda blanca */
+          if (silkTrace > 0.01) {
+            const arcSegs = this.isMobile ? 14 : 18;
+            ctxRef.lineWidth = 0.6;
+
+            for (let g = 0; g < 16; g++) {
+              ctxRef.strokeStyle = g % 2 === 0 ? theme.silkStroke : theme.silkHighlight;
+              ctxRef.globalAlpha = 0.92 * Math.min(1, silkTrace * 1.2);
+
+              for (let side = -1; side <= 1; side += 2) {
+                ctxRef.beginPath();
+                for (let s = 0; s <= arcSegs; s++) {
+                  const u = (s / arcSegs) * silkTrace;
+                  const pt = this.getOuterPetalPoint(g, u * Math.PI, 1.0, 1.0, side);
+                  const normR = Math.hypot(pt.x, pt.y) / 1.82;
+                  const waveZ = Math.sin(normR * 5.2 - wavePhaseBase) * waveAmp;
+                  this.transformAndProject(pt.x, pt.y, pt.z + waveZ, rx, ry, rzOuter, flowerScale, camDist, proj);
+                  if (s === 0) {
+                    ctxRef.moveTo(proj.x, proj.y);
+                  } else {
+                    ctxRef.lineTo(proj.x, proj.y);
+                  }
+                }
+                ctxRef.stroke();
+              }
+
+              /* Cabezas trazadoras blancas depositando los puntos sobre cada lazo exterior */
+              if (silkTrace > 0.02 && silkTrace < 0.99) {
+                const tracerFade = silkTrace < 0.88 ? 1 : clamp01((1 - silkTrace) / 0.12);
+                for (let side = -1; side <= 1; side += 2) {
+                  const pt = this.getOuterPetalPoint(g, silkTrace * Math.PI, 1.0, 1.0, side);
+                  const normR = Math.hypot(pt.x, pt.y) / 1.82;
+                  const waveZ = Math.sin(normR * 5.2 - wavePhaseBase) * waveAmp;
+                  this.transformAndProject(pt.x, pt.y, pt.z + waveZ, rx, ry, rzOuter, flowerScale, camDist, proj);
+                  const rad = 5.2 * proj.factor;
+                  ctxRef.globalAlpha = 0.85 * tracerFade;
+                  ctxRef.drawImage(sprites[1], proj.x - rad, proj.y - rad, rad * 2, rad * 2);
+                  ctxRef.fillStyle = theme.galaxyMain;
+                  ctxRef.globalAlpha = tracerFade;
+                  ctxRef.fillRect(proj.x - 1.0, proj.y - 1.0, 2.0, 2.0);
+                }
+              }
+            }
+          }
+
+          /* Etapa 4 (21.0s - 26.5s): Estrias interiores ultrafinas sobre los 16 petalos externos */
+          if (p4 > 0.01) {
+            const stSegs = this.isMobile ? 10 : 14;
+            const p4Smooth = smoothstep01(p4);
+            ctxRef.lineWidth = 0.6;
+            ctxRef.strokeStyle = theme.silkStroke;
+            ctxRef.globalAlpha = 0.52 * p4Smooth;
+
+            for (let g = 0; g < 16; g++) {
+              for (let side = -1; side <= 1; side += 2) {
+                ctxRef.beginPath();
+                for (let s = 0; s <= stSegs; s++) {
+                  const u = (s / stSegs) * p4Smooth;
+                  const pt = this.getOuterPetalPoint(g, u * Math.PI, 0.62, 0.94, side);
+                  const normR = Math.hypot(pt.x, pt.y) / 1.82;
+                  const waveZ = Math.sin(normR * 5.2 - wavePhaseBase) * waveAmp;
+                  this.transformAndProject(pt.x, pt.y, pt.z + waveZ, rx, ry, rzOuter, flowerScale, camDist, proj);
+                  if (s === 0) {
+                    ctxRef.moveTo(proj.x, proj.y);
+                  } else {
+                    ctxRef.lineTo(proj.x, proj.y);
+                  }
+                }
+                ctxRef.stroke();
+              }
+            }
+          }
+
+          /* Puntos nitidos (1.0 - 1.8 px) colocados estrictamente sobre las curvas matematicas */
+          const totalParticles = this.particleCount;
+          const p1Smooth = smoothstep01(p1);
+          const twinkleAmp = isReduced ? 0.24 : 0.42;
+
+          for (let i = 0; i < totalParticles; i++) {
+            const layerId = this.layer[i];
+            const u = this.uParam[i];
+            let reveal = 0;
+
+            if (layerId === 0) {
+              if (stage1Fade <= 0.01 || u > p1Smooth) {
+                continue;
+              }
+              reveal = stage1Fade * clamp01((p1Smooth - u) * 10 + 0.35);
+            } else if (layerId === 1) {
+              if (p2 <= 0.005) {
+                continue;
+              }
+              const ringNorm = this.ringParam[i];
+              const ringReveal = smoothstep01((p2 - ringNorm * 0.72) / 0.28);
+              if (ringReveal <= 0.01) {
+                continue;
+              }
+              reveal = ringReveal;
+            } else if (layerId === 2) {
+              if (silkTrace <= 0.005 || u > silkTrace) {
+                continue;
+              }
+              reveal = clamp01((silkTrace - u) * 8 + 0.35);
+            } else {
+              if (p4 <= 0.005) {
+                continue;
+              }
+              const thresh = this.ringParam[i];
+              reveal = smoothstep01((p4 - thresh) / 0.22);
+              if (reveal <= 0.01) {
+                continue;
+              }
+            }
+
+            const px = this.bx[i];
+            const py = this.by[i];
+            let pz = this.bz[i];
+            let rzLayer = rzInner;
+
+            if (layerId === 1) {
+              const normR = Math.hypot(px, py) / 0.94;
+              pz += Math.sin(normR * 5.2 - wavePhaseBase) * waveAmp;
+              rzLayer = rzInner;
+            } else if (layerId >= 2) {
+              const normR = Math.hypot(px, py) / 1.82;
+              pz += Math.sin(normR * 5.2 - wavePhaseBase) * waveAmp;
+              rzLayer = rzOuter;
+            }
+
+            let waveBoost = 0;
+            if (hasActivePetalWaves) {
+              const rDot = Math.hypot(px, py);
+              for (let wIdx = 0; wIdx < this.maxPetalWaves; wIdx++) {
+                const pw = this.petalWaves[wIdx];
+                if (!pw.active) {
+                  continue;
+                }
+                const dist = Math.abs(rDot - pw.radius);
+                if (dist < 0.24) {
+                  const fadeW = 1 - pw.radius / pw.maxRadius;
+                  const localW = (1 - dist / 0.24) * fadeW * pw.strength;
+                  if (localW > waveBoost) {
+                    waveBoost = localW;
+                  }
+                }
+              }
+              pz += waveBoost * 0.055;
+            }
+
+            this.transformAndProject(px, py, pz, rx, ry, rzLayer, flowerScale, camDist, proj);
+
+            const twinkle = (1 - twinkleAmp) + twinkleAmp * (0.5 + 0.5 * Math.sin(t * this.twinkleSpeed[i] * mf + this.phase[i]));
+            const alpha = Math.min(1, reveal * twinkle + waveBoost * 0.42);
+            if (alpha <= 0.03) {
+              continue;
+            }
+
+            const kind = this.colorKind[i];
+            if (layerId <= 1) {
+              ctxRef.fillStyle = kind === 2 ? theme.innerTip : (kind === 1 ? theme.innerMid : theme.innerBase);
+            } else {
+              ctxRef.fillStyle = kind === 0 ? theme.galaxyMain : (kind === 1 ? theme.galaxyAlt : theme.galaxyPinkSilver);
+            }
+
+            const baseDot = Math.max(1.0, Math.min(1.8, this.size[i] * Math.min(1.15, proj.factor * 0.95)));
+            const dotSize = baseDot * (1 + waveBoost * 0.35);
+            const half = dotSize * 0.5;
+            ctxRef.globalAlpha = alpha;
+            ctxRef.fillRect(proj.x - half, proj.y - half, dotSize, dotSize);
+          }
+
+          /* Ondas radiales luminosas que recorren la flor desde el centro hacia afuera */
+          if (hasActivePetalWaves) {
+            const ringSteps = this.isMobile ? 28 : 40;
+            for (let wIdx = 0; wIdx < this.maxPetalWaves; wIdx++) {
+              const pw = this.petalWaves[wIdx];
+              if (!pw.active) {
+                continue;
+              }
+              const fadeW = 1 - pw.radius / pw.maxRadius;
+              const rzWave = pw.radius < 0.96 ? rzInner : rzOuter;
+              const normR = pw.radius < 0.96 ? (pw.radius / 0.94) : (pw.radius / 1.82);
+              const waveZ = Math.sin(normR * 5.2 - wavePhaseBase) * waveAmp;
+              const baseZ = pw.radius < 0.96 ? (-0.22 * Math.sin(normR * Math.PI * 0.86)) : 0.05;
+              const pzWave = baseZ + waveZ + 0.04;
+
+              ctxRef.strokeStyle = pw.radius < 0.96 ? theme.innerTip : theme.cometCore;
+              ctxRef.lineWidth = 1.25;
+              ctxRef.globalAlpha = fadeW * 0.48 * pw.strength;
+              ctxRef.beginPath();
+              for (let s = 0; s <= ringSteps; s++) {
+                const a = (s / ringSteps) * Math.PI * 2;
+                this.transformAndProject(
+                  Math.cos(a) * pw.radius,
+                  Math.sin(a) * pw.radius,
+                  pzWave,
+                  rx,
+                  ry,
+                  rzWave,
+                  flowerScale,
+                  camDist,
+                  proj
+                );
+                if (s === 0) {
+                  ctxRef.moveTo(proj.x, proj.y);
+                } else {
+                  ctxRef.lineTo(proj.x, proj.y);
+                }
+              }
+              ctxRef.stroke();
+            }
+          }
+
+          /* Estrellas destacadas en las puntas de los 12 petalos rojos y 16 petalos exteriores */
+          if (p2 > 0.78) {
+            const innerStarAlpha = smoothstep01((p2 - 0.78) / 0.22);
+            const waveZTip = Math.sin(5.2 - wavePhaseBase) * waveAmp;
+            for (let p = 0; p < 12; p++) {
+              const theta = (p + 0.5) * (Math.PI / 6);
+              const r = 0.94;
+              const pz = -0.28 * Math.sin(Math.PI * 0.86) + 0.05 + waveZTip;
+              this.transformAndProject(Math.cos(theta) * r, Math.sin(theta) * r, pz, rx, ry, rzInner, flowerScale, camDist, proj);
+              const rad = 4.6 * proj.factor;
+              ctxRef.globalAlpha = 0.52 * innerStarAlpha;
+              ctxRef.drawImage(sprites[0], proj.x - rad, proj.y - rad, rad * 2, rad * 2);
+              ctxRef.fillStyle = theme.innerTip;
+              ctxRef.globalAlpha = 0.95 * innerStarAlpha;
+              ctxRef.fillRect(proj.x - 0.9, proj.y - 0.9, 1.8, 1.8);
+            }
+          }
+
+          if (p4 > 0.35) {
+            const outerStarAlpha = smoothstep01((p4 - 0.35) / 0.65);
+            for (let g = 0; g < 16; g++) {
+              const pt = this.getOuterPetalPoint(g, Math.PI, 1.0, 1.0, 1);
+              const normR = Math.hypot(pt.x, pt.y) / 1.82;
+              const waveZ = Math.sin(normR * 5.2 - wavePhaseBase) * waveAmp;
+              this.transformAndProject(pt.x, pt.y, pt.z + waveZ, rx, ry, rzOuter, flowerScale, camDist, proj);
+              const glint = (isReduced ? 0.78 : 0.68) + (isReduced ? 0.22 : 0.32) * Math.sin(t * 2.6 * mf + g * 0.8);
+              const rad = (5.2 + bass * 1.6) * proj.factor;
+              ctxRef.globalAlpha = 0.58 * outerStarAlpha * glint;
+              ctxRef.drawImage(sprites[1], proj.x - rad, proj.y - rad, rad * 2, rad * 2);
+              ctxRef.fillStyle = theme.galaxyMain;
+              ctxRef.globalAlpha = 0.96 * outerStarAlpha * glint;
+              ctxRef.fillRect(proj.x - 0.95, proj.y - 0.95, 1.9, 1.9);
+            }
+          }
+
+          /* 24 cometas luminosos continuos durante toda la cancion (0:00 -> 03:16) */
+          const cometReveal = smoothstep01(effectiveTime / 0.9);
+          if (cometReveal > 0.01) {
+            const trailCount = 9;
+            const cometVelFactor = mf * (1 + mids * 0.45 + bass * 0.35);
+
+            /* 12 cometas rojos viajando por las crestas/curvas de los 12 petalos interiores */
+            for (let c = 0; c < this.innerCometCount; c++) {
+              const cm = this.innerComets[c];
+              cm.phase += dt * cm.speed * cometVelFactor;
+              for (let tr = trailCount; tr >= 0; tr--) {
+                const theta = cm.phase - tr * 0.026;
+                const lobe = Math.pow(Math.abs(Math.sin(6 * theta)), 0.72);
+                const r = 0.94 * lobe;
+                const normR = r / 0.94;
+                const waveZ = Math.sin(normR * 5.2 - wavePhaseBase) * waveAmp;
+                const px = Math.cos(theta) * r;
+                const py = Math.sin(theta) * r;
+                const pz = -0.28 * Math.sin(normR * Math.PI * 0.86) - 0.05 * Math.cos(12 * theta) * normR + waveZ;
+                this.transformAndProject(px, py, pz, rx, ry, rzInner, flowerScale, camDist, proj);
+
+                const isHead = tr === 0;
+                const trailFade = 1 - tr / (trailCount + 1);
+                if (isHead) {
+                  const rad = (5.2 + bass * 1.8) * proj.factor;
+                  ctxRef.globalAlpha = cometReveal * 0.90;
+                  ctxRef.drawImage(sprites[0], proj.x - rad, proj.y - rad, rad * 2, rad * 2);
+                  ctxRef.fillStyle = theme.innerTip;
+                  ctxRef.globalAlpha = cometReveal;
+                  ctxRef.fillRect(proj.x - 1.0, proj.y - 1.0, 2.0, 2.0);
+                } else {
+                  ctxRef.fillStyle = tr < 4 ? theme.innerTip : theme.innerMid;
+                  ctxRef.globalAlpha = cometReveal * trailFade * 0.78;
+                  ctxRef.fillRect(proj.x - 0.65, proj.y - 0.65, 1.3, 1.3);
+                }
+              }
+            }
+
+            /* 12 cometas blancos viajando por los 16 lazos exteriores */
+            for (let c = 0; c < this.outerCometCount; c++) {
+              const cm = this.outerComets[c];
+              cm.phase += dt * cm.speed * cometVelFactor;
+              for (let tr = trailCount; tr >= 0; tr--) {
+                const sLoop = cm.phase - tr * 0.052;
+                const sNorm = ((sLoop % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+                const side = sNorm <= Math.PI ? 1 : -1;
+                const sHalf = sNorm <= Math.PI ? sNorm : (Math.PI * 2 - sNorm);
+                const pt = this.getOuterPetalPoint(cm.petalIdx, sHalf, 1.0, 1.0, side);
+                const normR = Math.hypot(pt.x, pt.y) / 1.82;
+                const waveZ = Math.sin(normR * 5.2 - wavePhaseBase) * waveAmp;
+                this.transformAndProject(pt.x, pt.y, pt.z + waveZ, rx, ry, rzOuter, flowerScale, camDist, proj);
+
+                const isHead = tr === 0;
+                const trailFade = 1 - tr / (trailCount + 1);
+                if (isHead) {
+                  const rad = (5.4 + bass * 1.8) * proj.factor;
+                  ctxRef.globalAlpha = cometReveal * 0.88;
+                  ctxRef.drawImage(sprites[1], proj.x - rad, proj.y - rad, rad * 2, rad * 2);
+                  ctxRef.fillStyle = theme.cometCore;
+                  ctxRef.globalAlpha = cometReveal;
+                  ctxRef.fillRect(proj.x - 1.0, proj.y - 1.0, 2.0, 2.0);
+                } else {
+                  ctxRef.fillStyle = tr < 4 ? theme.galaxyMain : theme.galaxyAlt;
+                  ctxRef.globalAlpha = cometReveal * trailFade * 0.75;
+                  ctxRef.fillRect(proj.x - 0.65, proj.y - 0.65, 1.3, 1.3);
+                }
+              }
+            }
+          }
+
+          /* Cometas recorriendo los petalos al pulsar "Rafaga de codigo" */
+          for (let i = 0; i < this.maxBurstComets; i++) {
+            const bc = this.burstComets[i];
+            if (!bc.active) {
+              continue;
+            }
+            bc.progress += dt * bc.speed * mf;
+            if (bc.progress >= 1) {
+              bc.active = false;
+              continue;
+            }
+            const headU = bc.progress;
+            const fadeOut = 1 - smoothstep01((headU - 0.72) / 0.28);
+            for (let tr = 8; tr >= 0; tr--) {
+              const u = Math.max(0, headU - tr * 0.032);
+              const pt = this.getOuterPetalPoint(bc.petalIdx, u * Math.PI, 0.85, 1.02, bc.side);
+              const normR = Math.hypot(pt.x, pt.y) / 1.82;
+              const waveZ = Math.sin(normR * 5.2 - wavePhaseBase) * waveAmp;
+              this.transformAndProject(pt.x, pt.y, pt.z + waveZ, rx, ry, rzOuter, flowerScale, camDist, proj);
+
+              const isHead = tr === 0;
+              const trailFade = 1 - tr / 9;
+              if (isHead) {
+                const rad = 7.2 * proj.factor;
+                ctxRef.globalAlpha = fadeOut * 0.92;
+                ctxRef.drawImage(sprites[bc.colorKind === 0 ? 1 : 2], proj.x - rad, proj.y - rad, rad * 2, rad * 2);
+                ctxRef.fillStyle = theme.cometCore;
+                ctxRef.globalAlpha = fadeOut;
+                ctxRef.fillRect(proj.x - 1.15, proj.y - 1.15, 2.3, 2.3);
+              } else {
+                ctxRef.fillStyle = bc.colorKind === 0 ? theme.galaxyAlt : theme.emberPrimary;
+                ctxRef.globalAlpha = fadeOut * trailFade * 0.78;
+                ctxRef.fillRect(proj.x - 0.7, proj.y - 0.7, 1.4, 1.4);
+              }
+            }
+          }
+
+          ctxRef.restore();
+        }
+      }
+
+      const cosmicFlower = new CosmicFlower3D();
+
+      function resizeCanvas() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        dpr = Math.min(window.devicePixelRatio || 1, 2);
+        canvas.width = Math.floor(width * dpr);
+        canvas.height = Math.floor(height * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        cosmicFlower.resize(width);
+      }
+
+      /* Pools preasignados para brasas de fondo, estelas de puntero, ondas y chispas de codigo */
+      const MAX_PARTICLES = 180;
+      const MAX_CODE_TOKENS = 28;
+      const MAX_WAVES = 10;
+
+      const CODE_TOKENS = [
+        "{ }",
+        "[ ]",
+        "( )",
+        "< />",
+        "const",
+        "commit",
+        "fork",
+        "copy()",
+        "git log",
+        "return",
+        "CODE_LINE",
+        "CODE_LINE"
+      ];
+
+      const particles = Array.from({ length: MAX_PARTICLES }, () => ({
+        active: false,
+        x: 0,
+        y: 0,
+        vx: 0,
+        vy: 0,
+        size: 2,
+        life: 0,
+        maxLife: 1,
+        hueShift: 0
+      }));
+
+      const codeTokens = Array.from({ length: MAX_CODE_TOKENS }, () => ({
+        active: false,
+        x: 0,
+        y: 0,
+        vx: 0,
+        vy: 0,
+        rot: 0,
+        vRot: 0,
+        scale: 1,
+        life: 0,
+        maxLife: 1,
+        token: "{ }",
+        generation: 0,
+        hasSplit: false,
+        splitAt: 0.36,
+        flash: 0,
+        paletteChoice: 0,
+        isBurst: false
+      }));
+
+      const waves = Array.from({ length: MAX_WAVES }, () => ({
+        active: false,
+        x: 0,
+        y: 0,
+        radius: 30,
+        maxRadius: 340,
+        alpha: 0,
+        speed: 4
+      }));
+
+      let particleCursor = 0;
+      let codeCursor = 0;
+      let waveCursor = 0;
+
+      function getActiveCodeCount() {
+        let count = 0;
+        for (let i = 0; i < MAX_CODE_TOKENS; i++) {
+          if (codeTokens[i].active) {
+            count++;
+          }
+        }
+        return count;
+      }
+
+      function spawnParticle(x, y, vx, vy, size, maxLife, hueOverride) {
+        const p = particles[particleCursor];
+        particleCursor = (particleCursor + 1) % MAX_PARTICLES;
+        p.active = true;
+        p.x = x;
+        p.y = y;
+        p.vx = vx;
+        p.vy = vy;
+        p.size = size;
+        p.life = 0;
+        p.maxLife = maxLife;
+        p.hueShift = typeof hueOverride === "number" ? hueOverride : Math.random();
+      }
+
+      function getLateralSpawnX() {
+        const onLeft = Math.random() < 0.5;
+        return onLeft
+          ? width * (0.04 + Math.random() * 0.17)
+          : width * (0.79 + Math.random() * 0.17);
+      }
+
+      function spawnCodeToken(x, y, vx, vy, scale, options) {
+        const opts = options || {};
+        const c = codeTokens[codeCursor];
+        codeCursor = (codeCursor + 1) % MAX_CODE_TOKENS;
+        c.active = true;
+        c.x = x;
+        c.y = y;
+        c.vx = vx;
+        c.vy = vy;
+        c.rot = (Math.random() - 0.5) * 0.28;
+        c.vRot = (Math.random() - 0.5) * 0.015;
+        c.scale = scale;
+        c.life = 0;
+        c.maxLife = opts.maxLife || (2.0 + Math.random() * 1.0);
+        c.token = opts.token || CODE_TOKENS[Math.floor(Math.random() * CODE_TOKENS.length)];
+        c.generation = opts.generation || 0;
+        c.hasSplit = Boolean(opts.hasSplit);
+        c.splitAt = 0.25 + Math.random() * 0.26;
+        c.flash = opts.flash || 0;
+        c.paletteChoice = Math.random() > 0.45 ? 1 : 0;
+        c.isBurst = Boolean(opts.isBurst);
+        return c;
+      }
+
+      function spawnWave(maxRadius, originX, originY, startRadius, speed) {
+        const w = waves[waveCursor];
+        waveCursor = (waveCursor + 1) % MAX_WAVES;
+        w.active = true;
+        w.x = originX ?? width * 0.5;
+        w.y = originY ?? height * 0.42;
+        w.radius = startRadius ?? 42;
+        w.maxRadius = maxRadius;
+        w.alpha = 0.85;
+        w.speed = speed ?? (reduceMotion ? 3.4 : 4.8);
+      }
+
+      function duplicateCodeToken(source) {
+        if (!source.active || source.hasSplit || source.generation >= 2) {
+          return false;
+        }
+        if (getActiveCodeCount() >= MAX_CODE_TOKENS - 2) {
+          return false;
+        }
+
+        source.hasSplit = true;
+        source.flash = 1;
+
+        const dirOut = source.x < width * 0.5 ? -1 : 1;
+        source.vx = dirOut * (0.55 + Math.random() * 0.65);
+
+        const twinToken = Math.random() < 0.72
+          ? source.token
+          : CODE_TOKENS[Math.floor(Math.random() * CODE_TOKENS.length)];
+
+        spawnCodeToken(
+          source.x + dirOut * 8,
+          source.y - 2,
+          dirOut * (0.85 + Math.random() * 0.75),
+          source.vy - 0.25,
+          Math.max(0.72, source.scale * 0.92),
+          {
+            token: twinToken,
+            generation: source.generation + 1,
+            hasSplit: source.generation + 1 >= 2,
+            maxLife: Math.max(1.1, source.maxLife * 0.78),
+            flash: 1,
+            isBurst: source.isBurst
+          }
+        );
+
+        for (let s = 0; s < 5; s++) {
+          const a = (s / 5) * Math.PI * 2 + Math.random() * 0.5;
+          spawnParticle(
+            source.x,
+            source.y,
+            Math.cos(a) * (1.2 + Math.random() * 1.8),
+            Math.sin(a) * (1.2 + Math.random() * 1.8),
+            2.2,
+            0.45
+          );
+        }
+        spawnWave(58, source.x, source.y, 6, 2.8);
+        return true;
+      }
+
+      function triggerCodeBurst(originX, originY, intensity, skipFlowerBurst) {
+        const cx = originX ?? width * 0.5;
+        const cy = originY ?? height * 0.42;
+        const pCount = reduceMotion ? Math.ceil(intensity * 0.55) : intensity;
+        const cCount = skipFlowerBurst ? 6 : (reduceMotion ? 8 : Math.max(10, Math.round(intensity * 0.22)));
+
+        if (!skipFlowerBurst) {
+          cosmicFlower.triggerBurst(intensity);
+          cosmicFlower.triggerPetalWave(1.15);
+        }
+
+        const sparkRingR = Math.min(width, height) * 0.17;
+        for (let i = 0; i < pCount; i++) {
+          const angle = (i / Math.max(1, pCount)) * Math.PI * 2 + Math.random() * 0.35;
+          const speed = 2.6 + Math.random() * 5.2;
+          spawnParticle(
+            cx + Math.cos(angle) * sparkRingR,
+            cy + Math.sin(angle) * sparkRingR,
+            Math.cos(angle) * speed,
+            Math.sin(angle) * speed - 0.4,
+            1.8 + Math.random() * 2.8,
+            0.75 + Math.random() * 0.65,
+            Math.random() < 0.52 ? 0.85 : 0.15
+          );
+        }
+
+        const codeRingR = Math.min(width, height) * 0.24;
+        for (let i = 0; i < cCount; i++) {
+          const angle = (i / Math.max(1, cCount)) * Math.PI * 2 + (Math.random() - 0.5) * 0.25;
+          const speed = 4.5 + Math.random() * 3.6;
+          spawnCodeToken(
+            cx + Math.cos(angle) * codeRingR,
+            cy + Math.sin(angle) * codeRingR * 0.85,
+            Math.cos(angle) * speed,
+            Math.sin(angle) * speed * 0.78 - 0.5,
+            0.78 + Math.random() * 0.26,
+            {
+              maxLife: 0.72 + Math.random() * 0.36,
+              hasSplit: true,
+              flash: 0.85,
+              isBurst: true
+            }
+          );
+        }
+
+        spawnWave(Math.min(width, height) * 0.46, cx, cy, 38, reduceMotion ? 3.6 : 5.2);
+      }
+
+      function drawCodeParticle(c, palette) {
+        const lifeRatio = c.life / c.maxLife;
+        const alpha = lifeRatio < 0.14 ? lifeRatio / 0.14 : Math.max(0, 1 - (lifeRatio - 0.14) / 0.86);
+        const accent = c.paletteChoice === 0 ? palette.primary : palette.secondary;
+
+        ctx.save();
+        ctx.translate(c.x, c.y);
+        ctx.rotate(c.rot);
+        ctx.scale(c.scale, c.scale);
+        ctx.globalAlpha = alpha * 0.94;
+
+        if (c.flash > 0.05) {
+          ctx.fillStyle = palette.tertiary;
+          ctx.globalAlpha = alpha * c.flash * 0.45;
+          ctx.beginPath();
+          ctx.arc(0, 0, 22 * (1 + (1 - c.flash) * 0.6), 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = alpha * 0.94;
+        }
+
+        if (c.token === "CODE_LINE") {
+          const w1 = 22;
+          const w2 = 30;
+          const w3 = 16;
+          ctx.fillStyle = "rgba(12, 8, 5, 0.72)";
+          ctx.strokeStyle = accent;
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.roundRect(-20, -11, 40, 22, 6);
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.fillStyle = palette.tertiary;
+          ctx.fillRect(-14, -6, w1, 2.5);
+          ctx.fillStyle = accent;
+          ctx.fillRect(-14, -1, w2, 2.5);
+          ctx.fillStyle = palette.secondary;
+          ctx.fillRect(-14, 4, w3, 2.5);
+        } else {
+          ctx.font = "700 12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
+          const metrics = ctx.measureText(c.token);
+          const padX = 8;
+          const boxW = Math.max(28, metrics.width + padX * 2);
+          const boxH = 22;
+
+          ctx.fillStyle = "rgba(12, 8, 5, 0.76)";
+          ctx.strokeStyle = c.flash > 0.2 ? palette.tertiary : accent;
+          ctx.lineWidth = c.generation > 0 ? 1.5 : 1.15;
+          ctx.beginPath();
+          ctx.roundRect(-boxW * 0.5, -boxH * 0.5, boxW, boxH, 7);
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.fillStyle = c.generation > 0 ? palette.tertiary : accent;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(c.token, 0, 0.5);
+        }
+
+        ctx.restore();
+      }
+
+      let lastPointerSpawn = 0;
+      let pointerX = width * 0.5;
+      let pointerY = height * 0.45;
+      let prevBeatEnergy = 0;
+
+      function renderScene(now) {
+        const dt = Math.min(0.05, (now - state.lastFrameTime) / 1000);
+        state.lastFrameTime = now;
+
+        if (state.started && state.isPlaying && state.sourceType === "synth") {
+          if (audioCtx) {
+            const elapsed = Math.max(0, audioCtx.currentTime - cycleStartCtxTime);
+            if (state.loopEnabled) {
+              state.synthTime = elapsed % SYNTH_TOTAL_DURATION;
+            } else if (elapsed >= SYNTH_TOTAL_DURATION) {
+              state.synthTime = SYNTH_TOTAL_DURATION;
+              state.isPlaying = false;
+              stopSynthScheduler();
+              updatePlayButtonUI();
+            } else {
+              state.synthTime = elapsed;
+            }
+          } else {
+            state.synthTime += dt;
+            if (state.synthTime >= SYNTH_TOTAL_DURATION) {
+              state.synthTime = state.loopEnabled ? (state.synthTime % SYNTH_TOTAL_DURATION) : SYNTH_TOTAL_DURATION;
+            }
+          }
+          updatePlayerProgressUI();
+        } else if (state.started && (state.sourceType === "corrido" || state.sourceType === "file") && mainAudioEl && !mainAudioEl.paused) {
+          updatePlayerProgressUI();
+        }
+
+        /* Sincronizacion de flowerTime con la intro (0 -> 26.5s) o reproduccion en curso */
+        if (state.started) {
+          const refTime = getReferencePlaybackTime();
+          const audioAdvancing = (state.sourceType === "synth" && state.isPlaying)
+            || ((state.sourceType === "corrido" || state.sourceType === "file") && mainAudioEl && !mainAudioEl.paused);
+
+          if (audioAdvancing) {
+            if (refTime < 26.5) {
+              if (Math.abs(refTime - state.flowerTime) > 0.45) {
+                state.flowerTime = refTime;
+              } else {
+                state.flowerTime += (refTime - state.flowerTime) * Math.min(1, dt * 10);
+              }
+            } else {
+              state.flowerTime = Math.max(26.5, state.flowerTime + dt, refTime);
+            }
+          }
+        } else {
+          state.flowerTime = 0;
+        }
+
+        /* Lectura de frecuencias desde AnalyserNode o envolvente ritmica a 108 BPM en file:// */
+        let bassEnergy = 0;
+        let midEnergy = 0;
+        let highEnergy = 0;
+        const hasLiveAnalyser = Boolean(analyser && freqData && state.isPlaying && (state.sourceType === "synth" || mediaSource));
+        const trackTime = (mainAudioEl && Number.isFinite(mainAudioEl.currentTime)) ? mainAudioEl.currentTime : (now * 0.001);
+
+        if (hasLiveAnalyser) {
+          analyser.getByteFrequencyData(freqData);
+          for (let i = 0; i < 8; i++) {
+            bassEnergy += freqData[i];
+          }
+          for (let i = 8; i < 32; i++) {
+            midEnergy += freqData[i];
+          }
+          for (let i = 32; i < 64; i++) {
+            highEnergy += freqData[i];
+          }
+          bassEnergy = bassEnergy / (8 * 255);
+          midEnergy = midEnergy / (24 * 255);
+          highEnergy = highEnergy / (32 * 255);
+        } else if (state.isPlaying && state.sourceType === "corrido") {
+          const beatPhase = (trackTime / BASE_BEAT_SEC) % 1;
+          const halfBarPhase = (trackTime / BASE_BAR_SEC) % 1;
+          const downbeatEnv = Math.exp(-beatPhase * 4.2);
+          const offbeatEnv = Math.exp(-(((beatPhase + 0.5) % 1) * 4.8));
+          const subEnv = Math.exp(-(((beatPhase * 2) % 1) * 5.0));
+          const barAccent = halfBarPhase < 0.5 ? 1.0 : 0.78;
+          bassEnergy = 0.24 + downbeatEnv * 0.48 * barAccent;
+          midEnergy = 0.2 + offbeatEnv * 0.4 + 0.06 * Math.sin(trackTime * 3.1);
+          highEnergy = 0.16 + subEnv * 0.34 + 0.05 * Math.cos(trackTime * 5.4);
+        } else {
+          const idlePulse = 0.14 + Math.sin(now * 0.0022) * 0.06;
+          bassEnergy = idlePulse;
+          midEnergy = idlePulse * 0.8;
+          highEnergy = idlePulse * 0.6;
+        }
+
+        const bass = bassEnergy;
+        const mids = midEnergy;
+        const highs = highEnergy;
+
+        const strongBeat = bass > 0.56 && prevBeatEnergy <= 0.56;
+        if (strongBeat && state.started && state.flowerTime >= 4.0) {
+          spawnWave(Math.min(width, height) * 0.44, width * 0.5, height * (width < 640 ? 0.39 : 0.42));
+
+          if (getActiveCodeCount() < 10 && Math.random() > 0.55) {
+            const sx = getLateralSpawnX();
+            const dirOut = sx < width * 0.5 ? -1 : 1;
+            spawnCodeToken(
+              sx,
+              height * (0.30 + Math.random() * 0.52),
+              dirOut * (0.22 + Math.random() * 0.45),
+              -1.1 - Math.random() * 0.85,
+              0.76 + Math.random() * 0.26,
+              { maxLife: 1.8 + Math.random() * 0.8 }
+            );
+          }
+
+          let splitCount = 0;
+          for (let i = 0; i < MAX_CODE_TOKENS && splitCount < 1; i++) {
+            const c = codeTokens[i];
+            if (c.active && !c.hasSplit && c.generation < 2 && c.life > 0.2 && (c.x < width * 0.24 || c.x > width * 0.76)) {
+              if (duplicateCodeToken(c)) {
+                splitCount++;
+              }
+            }
+          }
+        }
+        prevBeatEnergy = bass;
+
+        const palette = MODE_PALETTES[state.mode];
+        const flowerTheme = FLOWER_MODE_THEMES[state.mode] || FLOWER_MODE_THEMES.gold;
+        const centerX = width * 0.5;
+        const centerY = height * (width < 640 ? 0.39 : 0.42);
+        const baseScale = Math.min(width, height) * (width < 640 ? 0.175 : 0.205);
+
+        /* Limpiar sobre fondo negro limpio */
+        ctx.globalCompositeOperation = "source-over";
+        ctx.fillStyle = "#000000";
+        ctx.fillRect(0, 0, width, height);
+
+        /* Flor Cosmica 3D principal en composicion aditiva */
+        cosmicFlower.render(ctx, now, dt, {
+          width,
+          height,
+          centerX,
+          centerY,
+          baseScale,
+          bass,
+          mids,
+          highs,
+          pointerX,
+          pointerY,
+          reduceMotion,
+          mode: state.mode,
+          started: state.started,
+          flowerTime: state.flowerTime
+        });
+
+        if (!state.started) {
+          requestAnimationFrame(renderScene);
+          return;
+        }
+
+        /* Ondas expansivas aditivas */
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        for (let i = 0; i < MAX_WAVES; i++) {
+          const w = waves[i];
+          if (!w.active) {
+            continue;
+          }
+          w.radius += w.speed;
+          w.alpha = Math.max(0, 1 - w.radius / w.maxRadius);
+          if (w.radius >= w.maxRadius) {
+            w.active = false;
+            continue;
+          }
+          ctx.strokeStyle = i % 2 === 0 ? palette.primary : palette.secondary;
+          ctx.globalAlpha = w.alpha * 0.42;
+          ctx.lineWidth = 1.6;
+          ctx.beginPath();
+          ctx.ellipse(w.x, w.y, w.radius, w.radius * 0.78, 0, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        ctx.restore();
+
+        /* Emision ambiental sutil de brasas calidas y estelas */
+        const ambientSparkRate = (state.mode === "fire" ? 0.52 : 0.30) * (reduceMotion ? 0.65 : 1.0);
+        if (Math.random() < ambientSparkRate) {
+          spawnParticle(
+            Math.random() * width,
+            height + 8,
+            (Math.random() - 0.5) * 0.85,
+            -0.9 - Math.random() * (state.mode === "fire" ? 2.4 : 1.35),
+            1.4 + Math.random() * 2.1,
+            2.4 + Math.random() * 1.8
+          );
+        }
+
+        /* Actualizar y dibujar brasas / chispas luminosas en modo aditivo */
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        for (let i = 0; i < MAX_PARTICLES; i++) {
+          const p = particles[i];
+          if (!p.active) {
+            continue;
+          }
+          p.life += dt;
+          if (p.life >= p.maxLife) {
+            p.active = false;
+            continue;
+          }
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy -= 0.01;
+          const fade = 1 - p.life / p.maxLife;
+          ctx.fillStyle = p.hueShift > 0.52 ? flowerTheme.emberPrimary : (p.hueShift > 0.2 ? flowerTheme.emberSecondary : flowerTheme.innerTip);
+          ctx.globalAlpha = fade * 0.78;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size * fade + 0.55, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+
+        /* Actualizar, duplicar al ascender y dibujar chispas de codigo en los bordes laterales */
+        ctx.globalCompositeOperation = "source-over";
+        for (let i = 0; i < MAX_CODE_TOKENS; i++) {
+          const c = codeTokens[i];
+          if (!c.active) {
+            continue;
+          }
+          c.life += dt;
+          if (c.life >= c.maxLife) {
+            c.active = false;
+            continue;
+          }
+          if (!c.isBurst && c.x > width * 0.24 && c.x < width * 0.76) {
+            c.vx += c.x < width * 0.5 ? -0.18 : 0.18;
+          }
+          c.x += c.vx + Math.sin(now * 0.002 + i) * 0.22;
+          c.y += c.vy;
+          c.vy -= 0.006;
+          c.rot += c.vRot;
+          c.flash = Math.max(0, c.flash - dt * 2.4);
+
+          const lifeRatio = c.life / c.maxLife;
+          if (!c.hasSplit && c.generation === 0 && lifeRatio >= c.splitAt && c.y < height * 0.85 && (c.x < width * 0.24 || c.x > width * 0.76)) {
+            if (getActiveCodeCount() < 12 && Math.random() < 0.35) {
+              duplicateCodeToken(c);
+            } else {
+              c.hasSplit = true;
+            }
+          }
+
+          drawCodeParticle(c, palette);
+        }
+
+        requestAnimationFrame(renderScene);
+      }
+
+      /* Eventos de usuario */
+      function setVisualMode(mode) {
+        state.mode = mode;
+        cosmicFlower.setMode(mode);
+        document.body.setAttribute("data-mode", mode);
+        modeButtons.forEach((btn) => {
+          btn.classList.toggle("is-active", btn.getAttribute("data-mode") === mode);
+        });
+      }
+
+      modeButtons.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const targetMode = btn.getAttribute("data-mode");
+          setVisualMode(targetMode);
+          triggerCodeBurst(width * 0.5, height * 0.42, 24);
+        });
+      });
+
+      btnStartShow.addEventListener("click", () => {
+        state.started = true;
+        state.flowerTime = 0;
+        if (state.sourceType === "synth") {
+          state.synthTime = 0;
+        } else if (mainAudioEl) {
+          try {
+            mainAudioEl.currentTime = 0;
+          } catch (err) {}
+        }
+        cosmicFlower.resetBloom();
+        document.body.classList.remove("is-intro-open");
+        introOverlay.classList.add("is-hidden");
+        appShell.classList.add("is-active");
+        playAudio();
+        triggerCodeBurst(width * 0.5, height * 0.42, 46, true);
+      });
+
+      btnPlayPause.addEventListener("click", () => {
+        if (state.isPlaying) {
+          pauseAudio();
+        } else {
+          playAudio();
+        }
+      });
+
+      if (volumeSlider) {
+        volumeSlider.addEventListener("input", () => {
+          const parsed = Number.parseFloat(volumeSlider.value);
+          state.volume = Number.isFinite(parsed) ? Math.max(0, Math.min(1, parsed)) : 1;
+          if (mainAudioEl) {
+            mainAudioEl.volume = state.volume;
+            if (state.volume > 0) {
+              mainAudioEl.muted = false;
+            }
+          }
+          if (mediaGain) {
+            mediaGain.gain.value = state.volume;
+          }
+          if (masterGain) {
+            masterGain.gain.value = 0.72 * state.volume;
+          }
+        });
+      }
+
+      btnLoopToggle.addEventListener("click", () => {
+        state.loopEnabled = !state.loopEnabled;
+        if (mainAudioEl) {
+          mainAudioEl.loop = state.loopEnabled;
+        }
+        updateLoopButtonUI();
+        showToast(state.loopEnabled ? "Bucle activado en el reproductor." : "Bucle desactivado; se detendra al finalizar.");
+      });
+
+      btnBurst.addEventListener("click", () => {
+        triggerCodeBurst(width * 0.5, height * 0.42, 56);
+      });
+
+      btnLoadMp3.addEventListener("click", () => {
+        audioFileInput.click();
+      });
+
+      audioFileInput.addEventListener("change", (ev) => {
+        const file = ev.target.files && ev.target.files[0];
+        if (file) {
+          handleLocalAudioFile(file);
+        }
+        ev.target.value = "";
+      });
+
+      btnToggleSource.addEventListener("click", toggleAudioSource);
+
+      if (mainAudioEl) {
+        mainAudioEl.loop = state.loopEnabled;
+        mainAudioEl.addEventListener("loadedmetadata", () => {
+          if (state.sourceType === "corrido" && Number.isFinite(mainAudioEl.duration) && mainAudioEl.duration > 0) {
+            state.corridoDuration = mainAudioEl.duration;
+          }
+          updatePlayerProgressUI();
+        });
+        mainAudioEl.addEventListener("timeupdate", () => {
+          if (state.sourceType === "corrido" || state.sourceType === "file") {
+            updatePlayerProgressUI();
+          }
+        });
+        mainAudioEl.addEventListener("ended", () => {
+          if (!state.loopEnabled) {
+            state.isPlaying = false;
+            updatePlayButtonUI();
+            updatePlayerProgressUI();
+          }
+        });
+        mainAudioEl.addEventListener("error", () => {
+          if (state.sourceType === "corrido" && state.isPlaying) {
+            state.isPlaying = false;
+            updatePlayButtonUI();
+            showToast("No se pudo cargar corrido.mp3; usa el sintetizador o Cargar MP3.");
+          }
+        });
+      }
+
+      /* Barra de progreso interactiva (click y arrastre tactil/mouse) */
+      let isSeeking = false;
+      function seekFromPointerEvent(ev) {
+        const rect = progressTrack.getBoundingClientRect();
+        const clientX = ev.touches ? ev.touches[0].clientX : ev.clientX;
+        const ratio = (clientX - rect.left) / Math.max(1, rect.width);
+        seekToRatio(ratio);
+      }
+
+      progressTrack.addEventListener("pointerdown", (ev) => {
+        isSeeking = true;
+        progressTrack.setPointerCapture(ev.pointerId);
+        seekFromPointerEvent(ev);
+      });
+
+      progressTrack.addEventListener("pointermove", (ev) => {
+        if (isSeeking) {
+          seekFromPointerEvent(ev);
+        }
+      });
+
+      progressTrack.addEventListener("pointerup", () => {
+        isSeeking = false;
+      });
+
+      progressTrack.addEventListener("keydown", (ev) => {
+        const total = getCurrentAudioDuration() || DEFAULT_CORRIDO_DURATION;
+        const current = state.sourceType === "synth" ? state.synthTime : (mainAudioEl && mainAudioEl.currentTime) || 0;
+        if (ev.key === "ArrowRight") {
+          seekToRatio((current + 5) / total);
+        } else if (ev.key === "ArrowLeft") {
+          seekToRatio((current - 5) / total);
+        }
+      });
+
+      /* Interaccion en pantalla para estelas de particulas cosmicas y chispas de codigo */
+      function handlePointerTrail(clientX, clientY) {
+        pointerX = clientX;
+        pointerY = clientY;
+        if (!state.started) {
+          return;
+        }
+        const now = performance.now();
+        if (now - lastPointerSpawn < (reduceMotion ? 130 : 28)) {
+          return;
+        }
+        lastPointerSpawn = now;
+        for (let k = 0; k < (reduceMotion ? 1 : 2); k++) {
+          spawnParticle(
+            clientX + (Math.random() - 0.5) * 12,
+            clientY + (Math.random() - 0.5) * 12,
+            (Math.random() - 0.5) * 1.6,
+            -0.55 - Math.random() * 1.45,
+            1.7 + Math.random() * 2.4,
+            0.85 + Math.random() * 0.65,
+            k === 0 ? 0.85 : 0.25
+          );
+        }
+        if ((clientX < width * 0.24 || clientX > width * 0.76) && getActiveCodeCount() < 14 && Math.random() < 0.16) {
+          const dirOut = clientX < width * 0.5 ? -1 : 1;
+          spawnCodeToken(
+            clientX,
+            clientY,
+            dirOut * (0.25 + Math.random() * 0.55),
+            -0.85 - Math.random() * 0.9,
+            0.76 + Math.random() * 0.24,
+            { maxLife: 1.7 + Math.random() * 0.7 }
+          );
+        }
+      }
+
+      window.addEventListener("pointermove", (ev) => {
+        handlePointerTrail(ev.clientX, ev.clientY);
+      }, { passive: true });
+
+      window.addEventListener("touchmove", (ev) => {
+        if (ev.touches && ev.touches[0]) {
+          handlePointerTrail(ev.touches[0].clientX, ev.touches[0].clientY);
+        }
+      }, { passive: true });
+
+      /* Modal para personalizar mensaje */
+      function openDedicationModal() {
+        inputPhrase.value = state.phrase;
+        inputSignature.value = state.signature;
+        dedicationModal.classList.add("is-open");
+        inputPhrase.focus();
+      }
+
+      function closeDedicationModal() {
+        dedicationModal.classList.remove("is-open");
+      }
+
+      btnOpenDedication.addEventListener("click", openDedicationModal);
+      btnCancelModal.addEventListener("click", closeDedicationModal);
+      dedicationModal.addEventListener("click", (ev) => {
+        if (ev.target === dedicationModal) {
+          closeDedicationModal();
+        }
+      });
+
+      window.addEventListener("keydown", (ev) => {
+        if (ev.key === "Escape" && dedicationModal.classList.contains("is-open")) {
+          closeDedicationModal();
+        }
+      });
+
+      dedicationForm.addEventListener("submit", async (ev) => {
+        ev.preventDefault();
+        const phraseVal = inputPhrase.value.trim() || APP_CONFIG.FRASE_CORTA;
+        const sigVal = inputSignature.value.trim();
+
+        applyDedication(phraseVal, sigVal);
+
+        const shareUrl = new URL(window.location.href);
+        shareUrl.searchParams.delete("frase");
+        shareUrl.searchParams.set("para", phraseVal);
+        if (sigVal) {
+          shareUrl.searchParams.set("de", sigVal);
+        } else {
+          shareUrl.searchParams.delete("de");
+        }
+
+        const finalUrl = shareUrl.toString();
+        try {
+          window.history.replaceState({}, "", finalUrl);
+        } catch (err) {
+          /* En contextos locales replaceState puede restringirse */
+        }
+
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(finalUrl);
+            showToast("Mensaje aplicado y enlace copiado al portapapeles.");
+          } else {
+            showToast("Mensaje aplicado en pantalla.");
+          }
+        } catch (err) {
+          showToast("Mensaje aplicado. Copia el enlace desde la barra de direcciones.");
+        }
+
+        closeDedicationModal();
+        triggerCodeBurst(width * 0.5, height * 0.42, 34);
+      });
+
+      /* Inicializacion */
+      window.addEventListener("resize", resizeCanvas);
+      resizeCanvas();
+      initFromUrlAndConfig();
+      if (mainAudioEl) {
+        mainAudioEl.volume = state.volume;
+        mainAudioEl.muted = false;
+        if (Number.isFinite(mainAudioEl.duration) && mainAudioEl.duration > 0) {
+          state.corridoDuration = mainAudioEl.duration;
+        }
+      }
+      updateSourceToggleUI();
+      updatePlayerProgressUI();
+      requestAnimationFrame(renderScene);
+    })();
+  </script>
+</body>
+</html>
